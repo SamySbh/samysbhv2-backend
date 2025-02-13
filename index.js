@@ -1,5 +1,5 @@
 import express from 'express';
-
+import serviceRouter from './src/routes/service.route.js';
 const app = express()
 const port = process.env.PORT || 3000
 
@@ -14,11 +14,9 @@ app.get('/', (req, res) => {
     res.send('Hello World!')
 })
 
-
-app.get('/samy', (req, res) => {
-    res.send('Hello World ! Im Samy kkkk dd$$$')
-})
+app.use('/services', serviceRouter)
+app.use('/payments', serviceRouter)
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+    console.log(`My API app listening on port ${port}`)
 })

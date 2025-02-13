@@ -3,18 +3,25 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider    = "mongodb"
+  url         = env("DATABASE_URL")
 }
 
-model orders {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+model Service {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String      @unique
+  type        TypeService
+  description String
+  basePrice   Float
+  image       String
+  isActive    Boolean
+  createdAt   DateTime
+  updatedAt   DateTime
 }
 
-model test {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-}
-
-model users {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+enum TypeService {
+  VITRINE
+  ECOMMERCE
+  SAAS
+  COACHING
 }
