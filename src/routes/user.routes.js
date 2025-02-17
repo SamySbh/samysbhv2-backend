@@ -1,7 +1,7 @@
 import express from 'express';
-import userController from './../controllers/user.controller.js';
-import {userCreationValidator, userModificationValidator, userIdValidator} from './../schemas/user.schema.js';
-import {zodValidator} from './../middlewares/zod.middleware.js';
+import userController from '../controllers/user.controller.js';
+import {userCreationValidator, userModificationValidator, userIdValidator} from '../schemas/user.schema.js';
+import {zodValidator} from '../middlewares/zod.middleware.js';
 
 const userRouter = express.Router();
 

@@ -37,10 +37,51 @@ model User {
   company   String?
   createdAt DateTime?
   updatedAt DateTime?
+  orders    Order[]
 }
 
 enum UserRole {
   ADMIN
   USER
   DISABLED
+}
+
+model Order {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  statusMain    StatusMain
+  statusPayment StatusPayment
+  totalAmount   Float
+  depositAmount Float
+  deadlineDate  DateTime?
+  createdAt     DateTime?
+  updatedAt     DateTime?
+  userId        String        @db.ObjectId
+  user          User          @relation(fields: [userId], references: [id])
+  orderItems    OrderItem[]
+}
+
+enum StatusMain {
+  NEW
+  VALIDATED
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum StatusPayment {
+  PENDING_DEPOSIT
+  DEPOSIT_PAID
+  PENDING_FINAL
+  FULLY_PAID
+}
+
+model OrderItem {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  unitAmount  Float
+  totalAmount Float
+  quantity    Int
+  createdAt   DateTime?
+  updatedAt   DateTime?
+  orderId     String    @db.ObjectId
+  order       Order     @relation(fields: [orderId], references: [id])
 }

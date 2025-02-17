@@ -1,7 +1,7 @@
 import express from 'express';
-import serviceController from './../controllers/service.controller.js';
-import {serviceCreationValidator, serviceModificationValidator, serviceIdValidator} from './../schemas/service.schema.js';
-import {zodValidator} from './../middlewares/zod.middleware.js';
+import serviceController from '../controllers/service.controller.js';
+import {serviceCreationValidator, serviceModificationValidator, serviceIdValidator} from '../schemas/service.schema.js';
+import {zodValidator} from '../middlewares/zod.middleware.js';
 
 const serviceRouter = express.Router();
 
