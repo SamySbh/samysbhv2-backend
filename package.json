@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "serve": "node --watch index.js",
+    "serve": "node --watch src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "type": "module",
@@ -13,7 +13,8 @@
   "dependencies": {
     "@prisma/client": "^6.3.0",
     "express": "^4.21.2",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",

@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider    = "mongodb"
-  url         = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model Service {
@@ -15,8 +15,8 @@ model Service {
   basePrice   Float
   image       String
   isActive    Boolean
-  createdAt   DateTime
-  updatedAt   DateTime
+  createdAt   DateTime?
+  updatedAt   DateTime?
 }
 
 enum TypeService {
@@ -24,4 +24,23 @@ enum TypeService {
   ECOMMERCE
   SAAS
   COACHING
+}
+
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  role      UserRole
+  firstName String
+  lastName  String
+  password  String
+  phone     String
+  company   String?
+  createdAt DateTime?
+  updatedAt DateTime?
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  DISABLED
 }
