@@ -15,7 +15,7 @@ const orderController = {
         return res.status(200).json({
             success: true,
             data: orders,
-            message: 'Les commandes ont bien été récupéres'
+            message: 'Les commandes ont bien été récupérées'
         });
     } 
         

@@ -17,6 +17,7 @@ model Service {
   isActive    Boolean
   createdAt   DateTime?
   updatedAt   DateTime?
+  orderItems  OrderItem[]
 }
 
 enum TypeService {
@@ -84,4 +85,6 @@ model OrderItem {
   updatedAt   DateTime?
   orderId     String    @db.ObjectId
   order       Order     @relation(fields: [orderId], references: [id])
+  serviceId   String    @db.ObjectId
+  service     Service   @relation(fields: [serviceId], references: [id])
 }
