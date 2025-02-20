@@ -4,21 +4,21 @@ const prisma = new PrismaClient()
 
 const userController = {
     async getAllUsers(req, res) {
-        try{
+        try {
             const users = await prisma.user.findMany();
-        if (!users || users.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Aucun utilisateur trouvé'
+            if (!users || users.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Aucun utilisateur trouvé'
+                });
+            };
+            return res.status(200).json({
+                success: true,
+                data: users,
+                message: 'Les utilisateurs ont bien été récupéres'
             });
-        };
-        return res.status(200).json({
-            success: true,
-            data: users,
-            message: 'Les utilisateurs ont bien été récupéres'
-        });
-    } 
-        
+        }
+
         catch (error) {
             console.error('Error in getAllUsers :', error);
             return res.status(500).json({
@@ -31,7 +31,7 @@ const userController = {
     async getUserById(req, res) {
         try {
             const userId = req.params.id
-            const user  = await prisma.user.findUnique({
+            const user = await prisma.user.findUnique({
                 where: {
                     id: userId
                 }
@@ -50,7 +50,7 @@ const userController = {
                 message: 'L\'utilisateur a bien été récupéré'
             });
         } catch (error) {
-            
+
             console.error('Error in getUserById :', error);
             return res.status(500).json({
                 success: false,
@@ -100,7 +100,7 @@ const userController = {
             }
 
             const updatedUser = await prisma.user.update({
-                where:  {
+                where: {
                     id: userId
                 },
                 data: {

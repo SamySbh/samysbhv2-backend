@@ -4,21 +4,21 @@ const prisma = new PrismaClient()
 
 const orderItemController = {
     async getAllOrderItems(req, res) {
-        try{
+        try {
             const orderItems = await prisma.orderItem.findMany();
-        if (!orderItems || orderItems.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Aucun item trouvé'
+            if (!orderItems || orderItems.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Aucun item trouvé'
+                });
+            };
+            return res.status(200).json({
+                success: true,
+                data: orderItems,
+                message: 'Les items ont bien été récupérés'
             });
-        };
-        return res.status(200).json({
-            success: true,
-            data: orderItems,
-            message: 'Les items ont bien été récupérés'
-        });
-    } 
-        
+        }
+
         catch (error) {
             console.error('Error in getAllOrderItems :', error);
             return res.status(500).json({
@@ -31,7 +31,7 @@ const orderItemController = {
     async getOrderItemById(req, res) {
         try {
             const orderItemId = req.params.id
-            const orderItem  = await prisma.orderItem.findUnique({
+            const orderItem = await prisma.orderItem.findUnique({
                 where: {
                     id: orderItemId
                 }
@@ -50,7 +50,7 @@ const orderItemController = {
                 message: 'L\'item a bien été récupéré'
             });
         } catch (error) {
-            
+
             console.error('Error in getOrderItemById :', error);
             return res.status(500).json({
                 success: false,
@@ -98,7 +98,7 @@ const orderItemController = {
             }
 
             const updatedOrderItem = await prisma.orderItem.update({
-                where:  {
+                where: {
                     id: orderItemId
                 },
                 data: {
@@ -107,7 +107,7 @@ const orderItemController = {
                     quantity: req.body.quantity,
                     orderId: req.body.orderId,
                     serviceId: req.body.serviceId
-                    
+
                 }
             });
 

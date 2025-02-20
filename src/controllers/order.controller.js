@@ -4,21 +4,21 @@ const prisma = new PrismaClient()
 
 const orderController = {
     async getAllOrders(req, res) {
-        try{
+        try {
             const orders = await prisma.order.findMany();
-        if (!orders || orders.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Aucune commande trouvée'
+            if (!orders || orders.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Aucune commande trouvée'
+                });
+            };
+            return res.status(200).json({
+                success: true,
+                data: orders,
+                message: 'Les commandes ont bien été récupérées'
             });
-        };
-        return res.status(200).json({
-            success: true,
-            data: orders,
-            message: 'Les commandes ont bien été récupérées'
-        });
-    } 
-        
+        }
+
         catch (error) {
             console.error('Error in getAllOrders :', error);
             return res.status(500).json({
@@ -31,7 +31,7 @@ const orderController = {
     async getOrderById(req, res) {
         try {
             const orderId = req.params.id
-            const order  = await prisma.order.findUnique({
+            const order = await prisma.order.findUnique({
                 where: {
                     id: orderId
                 }
@@ -50,7 +50,7 @@ const orderController = {
                 message: 'La commande a bien été récupérée'
             });
         } catch (error) {
-            
+
             console.error('Error in getOrderById :', error);
             return res.status(500).json({
                 success: false,
@@ -99,7 +99,7 @@ const orderController = {
             }
 
             const updatedOrder = await prisma.order.update({
-                where:  {
+                where: {
                     id: orderId
                 },
                 data: {

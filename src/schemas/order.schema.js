@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const orderCreationValidator = z.object({
-    statusMain: z.enum(["NEW","VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]),
+    statusMain: z.enum(["NEW", "VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]),
     statusPayment: z.enum(["PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]),
     totalAmount: z.number(),
     depositAmount: z.number(),
@@ -10,7 +10,7 @@ export const orderCreationValidator = z.object({
 });
 
 export const orderModificationValidator = z.object({
-    statusMain: z.enum(["NEW","VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]).optional(),
+    statusMain: z.enum(["NEW", "VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]).optional(),
     statusPayment: z.enum(["PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]).optional(),
     totalAmount: z.number().optional(),
     depositAmount: z.number().optional(),

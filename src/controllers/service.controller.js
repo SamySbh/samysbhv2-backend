@@ -124,8 +124,8 @@ const serviceController = {
             }
 
             const updatedService = await prisma.service.update({
-                where: { 
-                    id: serviceId 
+                where: {
+                    id: serviceId
                 },
                 data: {
                     name: req.body.name,
