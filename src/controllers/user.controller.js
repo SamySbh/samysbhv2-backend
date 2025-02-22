@@ -147,10 +147,10 @@ const userController = {
                 message: 'L\'utilisateur a bien été supprimé'
             })
         } catch (error) {
-            console.error('Error in deleteUser :');
+            console.error('Error in deleteUser :', error);
             return res.status(500).json({
                 success: false,
-                message: 'Erreur lors de la création de l\'utilisateur'
+                message: 'Erreur lors de la suppression de l\'utilisateur'
             })
         }
     }

@@ -31,13 +31,13 @@ const orderItemController = {
     async getOrderItemById(req, res) {
         try {
             const orderItemId = req.params.id
-            const orderItem = await prisma.orderItem.findUnique({
+            const fetchedOrderItem = await prisma.orderItem.findUnique({
                 where: {
                     id: orderItemId
                 }
             });
 
-            if (!orderItem) {
+            if (!fetchedOrderItem) {
                 return res.status(404).json({
                     success: false,
                     message: 'Aucun item trouvé'
@@ -46,7 +46,7 @@ const orderItemController = {
 
             return res.status(200).json({
                 success: true,
-                data: { orderItem },
+                data: { fetchedOrderItem },
                 message: 'L\'item a bien été récupéré'
             });
         } catch (error) {
@@ -72,25 +72,25 @@ const orderItemController = {
             return res.status(201).json({
                 success: true,
                 data: createdOrderItem,
-                message: 'La item bien été créé'
+                message: 'L\' item bien été créé'
             });
         } catch (error) {
             console.error('Error in createOrderItem :', error);
             return res.status(500).json({
                 success: false,
-                message: 'Erreur lors de la création de la item'
+                message: 'Erreur lors de la création de l\'item'
             });
         }
     },
     async updateOrderItem(req, res) {
         try {
             const orderItemId = req.params.id;
-            const existingOrderItem = await prisma.orderItem.findUnique({
+            const fetchedOrderItem = await prisma.orderItem.findUnique({
                 where: {
                     id: orderItemId
                 }
             });
-            if (!existingOrderItem) {
+            if (!fetchedOrderItem) {
                 return res.status(404).json({
                     success: false,
                     message: 'Item non trouvé'
@@ -120,16 +120,16 @@ const orderItemController = {
             console.error('Error in updateOrderItem :', error);
             return res.status(500).json({
                 success: false,
-                message: 'Erreur lors de la modification de la item'
+                message: 'Erreur lors de la modification de l\'item'
             });
         }
     },
     async deleteOrderItem(req, res) {
-        const idOrderItem = req.params.id
+        const orderIdItem = req.params.id
         try {
             const deletedOrderItem = await prisma.orderItem.delete({
                 where: {
-                    id: idOrderItem
+                    id: orderIdItem
                 }
             });
             if (!deletedOrderItem) {

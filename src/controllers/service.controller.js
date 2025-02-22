@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import StripeService from '../services/stripe.service.js';
 
 const prisma = new PrismaClient()
 
@@ -43,7 +44,7 @@ const serviceController = {
     async getServiceById(req, res) {
         try {
             const serviceId = req.params.id
-            const service = await prisma.service.findUnique({
+            const fetchedService= await prisma.service.findUnique({
                 where: {
                     id: serviceId
                 },
@@ -56,7 +57,7 @@ const serviceController = {
                 }
             })
 
-            if (!service) {
+            if (!fetchedService) {
                 return res.status(404).json({
                     success: false,
                     message: 'Aucun service trouvé'
@@ -66,7 +67,7 @@ const serviceController = {
 
             return res.status(200).json({
                 success: true,
-                data: { service },
+                data: { fetchedService },
                 message: 'Le service a bien été récupéré'
             });
         }
@@ -92,6 +93,19 @@ const serviceController = {
                 }
             })
 
+            const stripeProduct = await StripeService.addProduct(createdService)
+
+            const updatedService = await prisma.service.update({
+                where: {
+                    id: createdService.id
+                },
+                data: {
+                    stripe_product_id: stripeProduct.id,
+                }
+            });
+
+            
+
             return res.status(201).json({
                 success: true,
                 data: createdService,
@@ -110,13 +124,13 @@ const serviceController = {
     async updateService(req, res) {
         try {
             const serviceId = req.params.id;
-            const existingService = await prisma.service.findUnique({
+            const fetchedService = await prisma.service.findUnique({
                 where: {
                     id: serviceId
                 }
             });
 
-            if (!existingService) {
+            if (!fetchedService) {
                 return res.status(404).json({
                     success: false,
                     message: 'Service non trouvé'

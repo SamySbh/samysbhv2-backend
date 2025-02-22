@@ -31,13 +31,13 @@ const orderController = {
     async getOrderById(req, res) {
         try {
             const orderId = req.params.id
-            const order = await prisma.order.findUnique({
+            const fetchedOrder = await prisma.order.findUnique({
                 where: {
                     id: orderId
                 }
             });
 
-            if (!order) {
+            if (!fetchedOrder) {
                 return res.status(404).json({
                     success: false,
                     message: 'Aucune commande trouvée'
@@ -46,7 +46,7 @@ const orderController = {
 
             return res.status(200).json({
                 success: true,
-                data: { order },
+                data: { fetchedOrder },
                 message: 'La commande a bien été récupérée'
             });
         } catch (error) {
@@ -67,7 +67,8 @@ const orderController = {
                     totalAmount: req.body.totalAmount,
                     depositAmount: req.body.depositAmount,
                     deadlineDate: req.body.deadlineDate,
-                    userId: req.body.userId
+                    userId: req.body.userId,
+                    orderItems: []
                 }
             });
             return res.status(201).json({
@@ -86,12 +87,12 @@ const orderController = {
     async updateOrder(req, res) {
         try {
             const orderId = req.params.id;
-            const existingOrder = await prisma.order.findUnique({
+            const fetchedOrder = await prisma.order.findUnique({
                 where: {
                     id: orderId
                 }
             });
-            if (!existingOrder) {
+            if (!fetchedOrder) {
                 return res.status(404).json({
                     success: false,
                     message: 'Commande non trouvée'
@@ -126,11 +127,11 @@ const orderController = {
         }
     },
     async deleteOrder(req, res) {
-        const idOrder = req.params.id
+        const orderId = req.params.id
         try {
             const deletedOrder = await prisma.order.delete({
                 where: {
-                    id: idOrder
+                    id: orderId
                 }
             });
             if (!deletedOrder) {
@@ -145,7 +146,7 @@ const orderController = {
                 message: 'La commande a bien été supprimé'
             })
         } catch (error) {
-            console.error('Error in deleteOrder :');
+            console.error('Error in deleteOrder :', error);
             return res.status(500).json({
                 success: false,
                 message: 'Erreur lors de la suppression de la commande'
