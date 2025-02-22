@@ -26,7 +26,7 @@ const paymentController = {
             const fetchedOrder = await prisma.order.findUnique({
                 where: { id: orderId },
                 include: {
-                    items: {
+                    orderItems: {
                         include: {
                             service: true
                         }
@@ -42,23 +42,23 @@ const paymentController = {
             }
 
             // 4. Création des line_items pour Stripe
-            const lineItems = order.items.map(item => ({
+            const orderItems = fetchedOrder.orderItems.map(orderItem => ({
                 price_data: {
-                    currency: 'eur',
+                    currency: 'EUR',
                     product_data: {
-                        name: item.service.name,
-                        description: item.service.description,
+                        name: orderItem.service.name,
+                        description: orderItem.service.description,
                     },
-                    unit_amount: item.unitAmount * 100, // Conversion en centimes
+                    unit_amount: orderItem.unitAmount * 100, // Conversion en centimes
                 },
-                quantity: item.quantity,
+                quantity: orderItem.quantity,
             }));
 
             // 5. Création de la session de paiement
             const session = await StripeService.createCheckoutSession({
-                customerId: user.stripeCustomerId,
-                lineItems,
-                orderId: order.id,
+                customerId: fetchedUser.stripeCustomerId,
+                lineItems : orderItems,
+                orderId: fetchedOrder.id,
                 mode: 'payment',
                 successUrl: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
                 cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`,
