@@ -7,7 +7,7 @@ const paymentController = {
     async createCheckoutSession(req, res) {
         try {
             // 1. Récupération des données du corps de la requête
-            const { services, orderId } = req.body;
+            const { orderId } = req.body;
             const userId = req.user.id; // On récupère l'ID de l'utilisateur depuis le middleware d'authentification
 
             // 2. Récupération de l'utilisateur pour avoir son stripeCustomerId

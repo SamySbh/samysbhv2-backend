@@ -1,11 +1,17 @@
 import express from 'express';
 import paymentController from '../controllers/payment.controller.js';
-import { protect } from '../middlewares/auth.middleware.js';
-import { zodValidator } from '../middlewares/zod.middleware.js';
-import { checkoutSessionValidator } from '../schemas/payment.schema.js';
+import webhookController from '../controllers/payment.webhook.controller.js';
+import stripeWebhookMiddleware from '../middlewares/stripe.middleware.js';
+import protect from '../middlewares/auth.middleware.js';
 
 const paymentRouter = express.Router();
+const webhookRouter = express.Router();
 
-paymentRouter.post('/create-checkout-session', protect, zodValidator(checkoutSessionValidator), paymentController.createCheckoutSession);
+//Création  d'une session de paiement
+paymentRouter.post('/create-checkout-session', protect, paymentController.createCheckoutSession);
 
-export default paymentRouter;
+//Webhook appelé par Stripe
+webhookRouter.post('/webhook', stripeWebhookMiddleware, webhookController.handleWebhook);
+
+
+export { paymentRouter, webhookRouter };

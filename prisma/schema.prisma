@@ -50,18 +50,19 @@ enum UserRole {
 }
 
 model Order {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  statusMain    StatusMain
-  statusPayment StatusPayment
-  totalAmount   Float
-  depositAmount Float
-  deadlineDate  DateTime?
-  stripeSessionId String?
-  createdAt     DateTime?
-  updatedAt     DateTime?
-  userId        String        @db.ObjectId
-  user          User          @relation(fields: [userId], references: [id])
-  orderItems    OrderItem[]
+  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
+  statusMain            StatusMain
+  statusPayment         StatusPayment
+  totalAmount           Float
+  depositAmount         Float
+  deadlineDate          DateTime?
+  stripeSessionId       String?
+  stripePaymentIntentId String?
+  createdAt             DateTime?
+  updatedAt             DateTime?
+  userId                String        @db.ObjectId
+  user                  User          @relation(fields: [userId], references: [id])
+  orderItems            OrderItem[]
 }
 
 enum StatusMain {
