@@ -13,14 +13,7 @@ const authController = {
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
-
-        const refreshToken = jwt.sign(
-            { id: userId, role: userRole },
-            process.env.JWT_REFRESH_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-
-        return { accessToken, refreshToken };
+        return { accessToken };
     },
 
     async register(req, res) {
@@ -94,30 +87,37 @@ const authController = {
             const decoded = jwt.verify(token, process.env.JWT_VERIFICATION_SECRET);
             const { email } = decoded;
 
-            // Mettre à jour l'utilisateur
-            await prisma.user.update({
+            // Mettre à jour l'utilisateur et récupérer l'utilisateur mis à jour
+            const updatedUser = await prisma.user.update({
                 where: { email },
-                data: { role: 'USER' } // On passe le rôle de DISABLED à USER
+                data: { isMailVerified: true }
             });
 
-            return res.status(200).json({
-                success: true,
-                message: 'Email vérifié avec succès'
-            });
+            // Générer des tokens avec l'ID et le rôle de l'utilisateur
+            const { accessToken } = authController.generateTokens(
+                updatedUser.id,
+                updatedUser.role
+            );
+
+            // Rediriger vers le frontend avec les tokens
+            return res.redirect(
+                `${process.env.FRONTEND_URL}/email-verification?token=${accessToken}`
+            );
         } catch (error) {
             console.error('Error in verifyEmail:', error);
 
+            // Déterminer le type d'erreur
             if (error.name === 'TokenExpiredError') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Le lien de vérification a expiré'
-                });
+                // Rediriger vers le frontend avec un message d'erreur
+                return res.redirect(
+                    `${process.env.FRONTEND_URL}/email-verification?error=expired`
+                );
             }
 
-            return res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la vérification de l\'email'
-            });
+            // Rediriger vers le frontend avec un message d'erreur générique
+            return res.redirect(
+                `${process.env.FRONTEND_URL}/email-verification?error=failed`
+            );
         }
     },
 
@@ -156,7 +156,7 @@ const authController = {
             }
 
             // Génération des tokens
-            const { accessToken, refreshToken } = authController.generateTokens(fetchedUser.id, fetchedUser.role);
+            const { accessToken } = authController.generateTokens(fetchedUser.id, fetchedUser.role);
 
             // Retrait du mot de passe pour la réponse
             const { password: _, ...userWithoutPassword } = fetchedUser;
@@ -165,8 +165,7 @@ const authController = {
                 success: true,
                 data: {
                     user: userWithoutPassword,
-                    accessToken,
-                    refreshToken
+                    accessToken
                 },
                 message: 'Connexion réussie'
             });
@@ -180,131 +179,82 @@ const authController = {
         }
     },
 
-        async getProfile(req, res) {
-    try {
-        // req.user contient déjà les données à jour grâce au middleware protect
-        const { password, ...userWithoutPassword } = req.user;
+    async getProfile(req, res) {
+        try {
+            // req.user contient déjà les données à jour grâce au middleware protect
+            const { password, ...userWithoutPassword } = req.user;
 
-        return res.status(200).json({
-            success: true,
-            data: { user: userWithoutPassword },
-            message: 'Profil récupéré avec succès'
-        });
-    } catch (error) {
-        console.error('Error in getProfile :', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la récupération du profil'
-        });
-    }
-},
+            return res.status(200).json({
+                success: true,
+                data: { user: userWithoutPassword },
+                message: 'Profil récupéré avec succès'
+            });
+        } catch (error) {
+            console.error('Error in getProfile :', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération du profil'
+            });
+        }
+    },
 
     async updateProfile(req, res) {
-    try {
-        // Extraire les données validées du corps de la requête
-        // Le validateur attend que tout soit dans req.body
-        const { firstName, lastName, phone, company, currentPassword, newPassword } = req.body;
-        const userId = req.user.id;
+        try {
+            // Extraire les données validées du corps de la requête
+            // Le validateur attend que tout soit dans req.body
+            const { firstName, lastName, phone, company, currentPassword, newPassword } = req.body;
+            const userId = req.user.id;
 
-        // Récupérer l'utilisateur actuel
-        const fetchedUser = await prisma.user.findUnique({ where: { id: userId } });
-        if (!fetchedUser) {
-            return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
-        }
-
-        // Préparer l'objet de mise à jour
-        const updateData = {
-            updatedAt: new Date()
-        };
-
-        // Ajouter les champs optionnels s'ils sont fournis
-        if (firstName) updateData.firstName = firstName;
-        if (lastName) updateData.lastName = lastName;
-        if (phone) updateData.phone = phone;
-        if (company) updateData.company = company;
-
-        // Traiter le changement de mot de passe si nécessaire
-        // Remarque: le validateur a déjà vérifié que si newPassword est présent, currentPassword l'est aussi
-        if (newPassword) {
-            const passwordMatch = await bcrypt.compare(currentPassword, user.password);
-            if (!passwordMatch) {
-                return res.status(400).json({ success: false, message: "Mot de passe actuel incorrect" });
+            // Récupérer l'utilisateur actuel
+            const fetchedUser = await prisma.user.findUnique({ where: { id: userId } });
+            if (!fetchedUser) {
+                return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
             }
 
-            // Hasher le nouveau mot de passe
-            const saltRounds = 10;
-            updateData.password = await bcrypt.hash(newPassword, saltRounds);
+            // Préparer l'objet de mise à jour
+            const updateData = {
+                updatedAt: new Date()
+            };
+
+            // Ajouter les champs optionnels s'ils sont fournis
+            if (firstName) updateData.firstName = firstName;
+            if (lastName) updateData.lastName = lastName;
+            if (phone) updateData.phone = phone;
+            if (company) updateData.company = company;
+
+            // Traiter le changement de mot de passe si nécessaire
+            // Remarque: le validateur a déjà vérifié que si newPassword est présent, currentPassword l'est aussi
+            if (newPassword) {
+                const passwordMatch = await bcrypt.compare(currentPassword, fetchedUser.password);
+                if (!passwordMatch) {
+                    return res.status(400).json({ success: false, message: "Mot de passe actuel incorrect" });
+                }
+
+                // Hasher le nouveau mot de passe
+                const saltRounds = 10;
+                updateData.password = await bcrypt.hash(newPassword, saltRounds);
+            }
+
+            // Mise à jour de l'utilisateur avec toutes les données modifiées
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: updateData
+            });
+
+            // Retirer le mot de passe de la réponse
+            const { password, ...updatedUserWithoutPassword } = updatedUser;
+
+            return res.status(200).json({
+                success: true,
+                data: { user: updatedUserWithoutPassword },
+                message: "Profil mis à jour avec succès"
+            });
+
+        } catch (error) {
+            console.error("Error in updateProfile:", error);
+            return res.status(500).json({ success: false, message: "Erreur lors de la mise à jour du profil" });
         }
-
-        // Mise à jour de l'utilisateur avec toutes les données modifiées
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: updateData
-        });
-
-        // Retirer le mot de passe de la réponse
-        const { password, ...updatedUserWithoutPassword } = updatedUser;
-
-        return res.status(200).json({
-            success: true,
-            data: { user: updatedUserWithoutPassword },
-            message: "Profil mis à jour avec succès"
-        });
-
-    } catch (error) {
-        console.error("Error in updateProfile:", error);
-        return res.status(500).json({ success: false, message: "Erreur lors de la mise à jour du profil" });
     }
-},
-    async refreshToken(req, res) {
-    try {
-        const { refreshToken } = req.body;
-
-        if (!refreshToken) {
-            return res.status(401).json({
-                success: false,
-                message: 'Refresh token manquant'
-            });
-        }
-
-        // Vérifier le refresh token
-        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-
-        // Générer de nouveaux tokens
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-            generateTokens(decoded.id, decoded.role);
-
-        return res.status(200).json({
-            success: true,
-            data: {
-                accessToken: newAccessToken,
-                refreshToken: newRefreshToken
-            },
-            message: 'Tokens renouvelés avec succès'
-        });
-    } catch (error) {
-        console.error('Error in refreshToken:', error);
-
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Refresh token invalide'
-            });
-        }
-
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Refresh token expiré'
-            });
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: 'Erreur lors du renouvellement du token'
-        });
-    }
-}
 };
 
 

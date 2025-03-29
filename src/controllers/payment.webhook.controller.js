@@ -84,11 +84,18 @@ const webhookController = {
                 }
             });
 
+            // Envoie du mail de confirmation
+            await EmailService.sendPaymentConfirmationEmail(
+                fetchedOrder.user.email,
+                updatedOrder
+            );
+
             return {
                 success: true,
                 data: updatedOrder,
                 message: 'Paiement validé avec succès'
             };
+
         } catch (error) {
             console.error('Erreur dans handleCheckoutSessionCompleted:', error);
             throw error;
@@ -122,6 +129,7 @@ const webhookController = {
                 data: updatedOrder,
                 message: 'Échec du paiement enregistré'
             };
+
         } catch (error) {
             console.error('Erreur dans handlePaymentFailed:', error);
             throw error;

@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
+import OrderService from '../services/order.service.js';
 
 const prisma = new PrismaClient()
 
@@ -30,14 +31,21 @@ const orderController = {
 
     async getOrderById(req, res) {
         try {
-            const orderId = req.params.id
-            const fetchedOrder = await prisma.order.findUnique({
+            const orderId = req.params.id;
+            const order = await prisma.order.findUnique({
                 where: {
                     id: orderId
+                },
+                include: {
+                    orderItems: {
+                        include: {
+                            service: true  // Inclure aussi les informations du service
+                        }
+                    }
                 }
             });
 
-            if (!fetchedOrder) {
+            if (!order) {
                 return res.status(404).json({
                     success: false,
                     message: 'Aucune commande trouvée'
@@ -46,11 +54,10 @@ const orderController = {
 
             return res.status(200).json({
                 success: true,
-                data: { fetchedOrder },
+                data: { order },
                 message: 'La commande a bien été récupérée'
             });
         } catch (error) {
-
             console.error('Error in getOrderById :', error);
             return res.status(500).json({
                 success: false,
@@ -58,6 +65,40 @@ const orderController = {
             });
         }
     },
+
+    // Dans order.controller.js, ajoutez cette méthode
+    async getOrderBySessionId(req, res) {
+        try {
+            const sessionId = req.params.sessionId;
+            const order = await prisma.order.findFirst({
+                where: {
+                    stripeSessionId: sessionId
+                }
+            });
+
+            if (!order) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Aucune commande trouvée avec ce sessionId'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: { order },
+                message: 'La commande a bien été récupérée'
+            });
+
+        } catch (error) {
+            console.error('Error in getOrderBySessionId:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération de la commande'
+            });
+        }
+    },
+
+    
     async createOrder(req, res) {
         try {
             const createdOrder = await prisma.order.create({
@@ -67,8 +108,7 @@ const orderController = {
                     totalAmount: req.body.totalAmount,
                     depositAmount: req.body.depositAmount,
                     deadlineDate: req.body.deadlineDate,
-                    userId: req.body.userId,
-                    orderItems: []
+                    userId: req.body.userId
                 }
             });
             return res.status(201).json({
@@ -84,6 +124,36 @@ const orderController = {
             });
         }
     },
+
+    async createCompleteOrder(req, res) {
+        try {
+            const { orderItems, ...orderData } = req.body;
+
+            // Validation basique
+            if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La commande doit contenir au moins un article'
+                });
+            }
+
+            // Utilise le service pour créer la commande avec ses items
+            const result = await OrderService.createOrderWithItems(orderData, orderItems);
+
+            return res.status(201).json({
+                success: true,
+                data: result,
+                message: 'La commande et ses articles ont bien été créés'
+            });
+        } catch (error) {
+            console.error('Error in createCompleteOrder:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la création de la commande complète'
+            });
+        }
+    },
+
     async updateOrder(req, res) {
         try {
             const orderId = req.params.id;

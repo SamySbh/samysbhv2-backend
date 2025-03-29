@@ -66,9 +66,7 @@ export const updateProfileValidator = z.object({
         message: "Le mot de passe actuel est requis pour changer de mot de passe",
         path: ["currentPassword"]
     });
-    export const refreshTokenValidator = z.object({
-        refreshToken: z.string()
-    });
+
     export const verificationTokenValidator = z.object({
         query: z.object({
             token: z.string().min(1, { message: "Le token de vérification est requis" })
@@ -82,6 +80,5 @@ export default {
     tokenValidator,
     userIdValidator,
     updateProfileValidator,
-    refreshTokenValidator,
     verificationTokenValidator
 };

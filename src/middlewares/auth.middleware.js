@@ -1,4 +1,4 @@
-// auth.middleware.js (simplifié)
+// auth.middleware.js
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { tokenValidator } from '../schemas/auth.schema.js';
@@ -6,7 +6,7 @@ import { zodValidator } from './zod.middleware.js';
 
 const prisma = new PrismaClient();
 
-// Version simplifiée du middleware d'authentification
+// Middleware d'authentification de base
 export const protect = [
     zodValidator(tokenValidator),
     async (req, res, next) => {
@@ -33,6 +33,7 @@ export const protect = [
                 });
             }
 
+            // Attacher l'utilisateur à la requête pour les middlewares suivants
             req.user = user;
 
             next();
@@ -62,4 +63,31 @@ export const protect = [
     }
 ];
 
+// Middleware pour vérifier les rôles (à utiliser après protect)
+export const requireRole = (role) => {
+    return (req, res, next) => {
+        // Vérifie que req.user existe (middleware protect exécuté avant)
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentification requise'
+            });
+        }
+
+        // Vérifie le rôle de l'utilisateur
+        if (req.user.role !== role) {
+            return res.status(403).json({
+                success: false,
+                message: 'Accès refusé. Privilèges insuffisants.'
+            });
+        }
+
+        next();
+    };
+};
+
+// Création d'un middleware spécifique pour le rôle ADMIN
+export const requireAdmin = requireRole('ADMIN');
+
+// Pour la rétrocompatibilité avec le code existant
 export default protect;

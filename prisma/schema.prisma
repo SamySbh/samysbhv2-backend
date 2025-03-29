@@ -15,6 +15,7 @@ model Service {
   basePrice       Float
   image           String
   isActive        Boolean
+  features        String[]
   stripeProductId String?
   createdAt       DateTime?
   updatedAt       DateTime?
@@ -38,6 +39,7 @@ model User {
   phone            String
   company          String?
   stripeCustomerId String?
+  isMailVerified   Boolean?
   createdAt        DateTime?
   updatedAt        DateTime?
   orders           Order[]

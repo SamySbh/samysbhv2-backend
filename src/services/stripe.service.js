@@ -7,7 +7,7 @@ const StripeService = {
             description: data.description,
             metadata: data,
             default_price_data: {
-                currency: "EUR",
+                currency: process.env.STRIPE_DEFAULT_CURRENCY || 'EUR',
                 unit_amount: data.basePrice * 100,
             }
         })
@@ -20,10 +20,10 @@ const StripeService = {
             metadata: data
         })
     },
-    async createCheckoutSession({ customerId, lineItems, orderId, mode = 'payment', successUrl, cancelUrl }) {
+    async createCheckoutSession({ customerId, line_items, orderId, mode = 'payment', successUrl, cancelUrl }) {
         return stripeSDK.checkout.sessions.create({
             customer: customerId,
-            line_items: lineItems,
+            line_items: line_items,
             mode: mode,
             success_url: successUrl,
             cancel_url: cancelUrl,

@@ -44,7 +44,7 @@ const paymentController = {
             // 4. Création des line_items pour Stripe
             const orderItems = fetchedOrder.orderItems.map(orderItem => ({
                 price_data: {
-                    currency: 'EUR',
+                    currency: process.env.STRIPE_DEFAULT_CURRENCY || 'EUR',
                     product_data: {
                         name: orderItem.service.name,
                         description: orderItem.service.description,
@@ -54,14 +54,20 @@ const paymentController = {
                 quantity: orderItem.quantity,
             }));
 
+            if (!orderItems || orderItems.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La commande ne contient aucun article'
+                });
+            }
             // 5. Création de la session de paiement
             const session = await StripeService.createCheckoutSession({
                 customerId: fetchedUser.stripeCustomerId,
-                lineItems : orderItems,
+                line_items: orderItems,
                 orderId: fetchedOrder.id,
                 mode: 'payment',
                 successUrl: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-                cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`,
+                cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel?session_id={CHECKOUT_SESSION_ID}`,
             });
 
             // 6. Mise à jour de l'order avec l'ID de la session

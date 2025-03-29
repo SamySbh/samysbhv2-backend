@@ -7,9 +7,6 @@ const serviceController = {
     async getAllServices(req, res) {
         try {
             const services = await prisma.service.findMany({
-                where: {
-                    isActive: true
-                },
                 // On sélectionne uniquement les champs nécessaires :
                 select: {
                     id: true,
@@ -17,6 +14,9 @@ const serviceController = {
                     description: true,
                     basePrice: true,
                     image: true,
+                    type: true,
+                    features: true,
+                    isActive: true
                 }
             });
 
@@ -53,7 +53,10 @@ const serviceController = {
                     name: true,
                     description: true,
                     basePrice: true,
-                    image: true
+                    image: true,
+                    type: true,
+                    features: true,
+                    isActive: true
                 }
             })
 
@@ -89,7 +92,8 @@ const serviceController = {
                     description: req.body.description,
                     image: req.body.image,
                     isActive: req.body.isActive,
-                    type: req.body.type
+                    type: req.body.type,
+                    features: req.body.features || []
                 }
             })
 
@@ -100,7 +104,7 @@ const serviceController = {
                     id: createdService.id
                 },
                 data: {
-                    stripe_product_id: stripeProduct.id,
+                    stripeProductId: stripeProduct.id,
                 }
             });
 
@@ -147,7 +151,8 @@ const serviceController = {
                     description: req.body.description,
                     image: req.body.image,
                     isActive: req.body.isActive,
-                    type: req.body.type
+                    type: req.body.type,
+                    features: req.body.features
                 }
             });
 
@@ -192,7 +197,33 @@ const serviceController = {
                 message: 'Erreur lors de la suppression du service'
             });
         }
+    },
+    // Dans ton contrôleur (ex: service.controller.js)
+async uploadImage(req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Aucun fichier n\'a été uploadé'
+            });
+        }
+
+        // Générer l'URL publique du fichier uploadé
+        const imageUrl = `/uploads/${req.file.filename}`;
+
+        return res.status(200).json({
+            success: true,
+            data: { imageUrl },
+            message: 'Image uploadée avec succès'
+        });
+    } catch (error) {
+        console.error('Error in uploadImage:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'upload de l\'image'
+        });
     }
+}
 }
 
 export default serviceController;
