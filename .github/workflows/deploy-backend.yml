@@ -20,7 +20,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Deploy back-end to o2switch
+      - name: Build preTriggerScript for restarting
+        run: |
+          echo "#!/bin/bash" > restart.sh
+          echo "source /home/sesa3874/nodevenv/api/18/bin/activate" >> restart.sh
+          echo "cd /home/sesa3874/api" >> restart.sh
+          echo "npm install --production" >> restart.sh
+          echo "passenger-config restart-app /home/sesa3874/api" >> restart.sh
+          chmod +x restart.sh
+        
+      - name: Deploy back-end to o2switch via SFTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -33,16 +42,6 @@ jobs:
             .git/**
             .github/**
             .env.example
-            
-      - name: Restart Node.js application
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
-          script: |
-            source /home/sesa3874/nodevenv/api/16/bin/activate
-            cd /home/sesa3874/api
-            npm install --production
-            passenger-config restart-app /home/sesa3874/api
+          # Send the restart script to be executed by cron
+          include: |
+            restart.sh
