@@ -40,7 +40,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          key_passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           script: |
             source /home/sesa3874/nodevenv/api/16/bin/activate
             cd /home/sesa3874/api
