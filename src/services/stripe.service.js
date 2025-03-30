@@ -2,10 +2,11 @@ import stripeSDK from "../configs/stripe.js"
 
 const StripeService = {
     async addProduct(data) {
+        const {features, ...service} = data
         return stripeSDK.products.create({
             name: data.name,
             description: data.description,
-            metadata: data,
+            metadata: service,
             default_price_data: {
                 currency: process.env.STRIPE_DEFAULT_CURRENCY || 'EUR',
                 unit_amount: data.basePrice * 100,
