@@ -11,7 +11,7 @@ const uploadController = {
 
             // Générer l'URL publique du fichier uploadé
             // Assure-toi que cette URL est accessible depuis le frontend
-            const imageUrl = `/src/assets/uploads/${req.file.filename}`;
+            const imageUrl = `/images/${req.file.filename}`;
 
             return res.status(200).json({
                 success: true,
