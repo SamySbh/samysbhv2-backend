@@ -26,6 +26,10 @@ app.use(express.json());
 
 app.use(cors())
 
+// Test endpoint
+app.get('/test', (req, res) => {
+    res.json({ message: 'Test endpoint is working!' });
+});
 
 app.use('/services', serviceRouter);
 app.use('/users', userRouter);
