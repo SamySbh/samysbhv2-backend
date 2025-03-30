@@ -23,10 +23,10 @@ jobs:
       - name: Build preTriggerScript for restarting
         run: |
           echo "#!/bin/bash" > restart.sh
-          echo "source /home/sesa3874/nodevenv/api/18/bin/activate" >> restart.sh
-          echo "cd /home/sesa3874/api" >> restart.sh
+          echo "source /home/sesa3874/nodevenv/api-source/20/bin/activate" >> restart.sh
+          echo "cd /home/sesa3874/api-source" >> restart.sh
           echo "npm install --production" >> restart.sh
-          echo "passenger-config restart-app /home/sesa3874/api" >> restart.sh
+          echo "passenger-config restart-app /home/sesa3874/api-source" >> restart.sh
           chmod +x restart.sh
         
       - name: Deploy back-end to o2switch via SFTP
