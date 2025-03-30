@@ -37,7 +37,11 @@ app.use('/payments', paymentRouter);
 app.use('/upload', uploadRouter);
 app.use('/contact', contactRouter);
 
-
-app.listen(port, () => {
-    console.log(`My API app listening on port ${port}`)
-});
+if (typeof(PhusionPassenger) !== 'undefined') {
+    PhusionPassenger.configure({ autoInstall: false });
+}
+if (typeof(PhusionPassenger) !== 'undefined') {
+    app.listen('passenger');
+} else {
+    app.listen(3000);
+}
