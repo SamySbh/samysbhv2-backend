@@ -14,7 +14,7 @@ import cors from 'cors'
 
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 // Middleware to serve static files from the 'public' directory.
 app.use(express.static('public'));
@@ -26,10 +26,6 @@ app.use(express.json());
 
 app.use(cors())
 
-// Test endpoint
-app.get('/test', (req, res) => {
-    res.json({ message: 'Test endpoint is working!' });
-});
 
 app.use('/services', serviceRouter);
 app.use('/users', userRouter);

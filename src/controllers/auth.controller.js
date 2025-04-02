@@ -56,12 +56,26 @@ const authController = {
 
             // Création du client Stripe
             const stripeCustomer = await StripeService.addCustomer(newUser);
+            if (stripeCustomer.id) {
+                // Mise à jour avec l'ID Stripe
+                const updatedUser = await prisma.user.update({
+                    where: { id: newUser.id },
+                    data: { stripeCustomerId: stripeCustomer.id }
+                });
 
-            // Mise à jour avec l'ID Stripe
-            const updatedUser = await prisma.user.update({
-                where: { id: newUser.id },
-                data: { stripeCustomerId: stripeCustomer.id }
-            });
+            } else {
+                // Si la création du client Stripe échoue, supprimer l'utilisateur
+                await prisma.user.delete({
+                    where: { id: newUser.id }
+                });
+
+                return res.status(502).json({
+                    success: false,
+                    message: "Échec de la création du compte: problème avec le service de paiement"
+                });
+            }
+
+
 
             const { password: _, ...userWithoutPassword } = updatedUser;
 
