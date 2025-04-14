@@ -1,11 +1,9 @@
-// src/middlewares/upload.middleware.js
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { env } from 'process';
 
-
-const frontendDir = path.resolve('C:/wamp64/www/vuejs-memoire/');
-const uploadDir = path.join(frontendDir, 'src/assets/uploads');
+const uploadDir = 'src/assets/uploads';
 
 // Configuration du stockage
 const storage = multer.diskStorage({

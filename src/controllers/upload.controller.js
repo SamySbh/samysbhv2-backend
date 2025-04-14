@@ -1,4 +1,3 @@
-// src/controllers/upload.controller.js
 const uploadController = {
     async uploadImage(req, res) {
         try {
