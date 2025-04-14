@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { env } from 'process';
 
-const uploadDir = 'src/assets/uploads';
+const frontendDir = path.resolve(process.env.);
+const uploadDir = path.join(frontendDir, 'src/assets/uploads');
 
 // Configuration du stockage
 const storage = multer.diskStorage({
