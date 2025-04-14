@@ -1,7 +1,6 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { env } from 'process';
 
 const frontendDir = path.resolve(process.env.FRONTEND_DIR);
 const uploadDir = path.join(frontendDir, 'src/assets/uploads');
