@@ -1,9 +1,14 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const frontendDir = path.resolve(process.env.FRONTEND_DIR);
-const uploadDir = path.join(frontendDir, 'src/assets/uploads');
+// Obtenir le chemin du répertoire actuel (avec ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Chemin d'upload dans le dossier du backend (et non plus dans le frontend)
+const uploadDir = path.join(__dirname, '../src/assets/uploads');
 
 // Créer le dossier d'upload s'il n'existe pas
 const ensureUploadDirExists = () => {
