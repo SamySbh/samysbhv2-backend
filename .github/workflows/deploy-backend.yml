@@ -2,7 +2,7 @@ name: Deploy Backend to o2switch
 
 on:
   push:
-    branches: [ main ]  # Change to your main branch if different
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -42,6 +42,3 @@ jobs:
             .git/**
             .github/**
             .env.example
-          # Send the restart script to be executed by cron
-          include: |
-            restart.sh
