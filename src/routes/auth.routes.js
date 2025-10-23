@@ -26,5 +26,7 @@ authRouter.post('/send-verification-mail', EmailService.sendVerificationEmail);
 //Vérification d'un email utilisateur (GET /auth/verify-email)
 authRouter.get('/verify-email', authController.verifyEmail);
 
+// Rafraîchissement du token d'accès (POST /auth/refresh-token)
+authRouter.post('/refresh-token', authController.refreshToken);
 
 export default authRouter;

@@ -13,9 +13,63 @@ const authController = {
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
-        return { accessToken };
+        const refreshToken = jwt.sign(
+            { id: userId },
+            process.env.JWT_REFRESH_SECRET,
+            { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+        );
+        return { accessToken, refreshToken };
     },
+    async refreshToken(req, res) {
+        try {
+            const { refreshToken } = req.body;
 
+            if (!refreshToken) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Refresh token manquant'
+                });
+            }
+
+            // Vérifier le refresh token
+            let decoded;
+            try {
+                decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+            } catch (error) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Refresh token invalide ou expiré'
+                });
+            }
+
+            // Récupérer l'utilisateur
+            const user = await prisma.user.findUnique({
+                where: { id: decoded.id }
+            });
+
+            if (!user || user.role === 'DISABLED') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Utilisateur désactivé ou introuvable'
+                });
+            }
+
+            // Générer de nouveaux tokens
+            const tokens = authController.generateTokens(user.id, user.role);
+
+            return res.status(200).json({
+                success: true,
+                data: tokens,
+                message: 'Tokens renouvelés avec succès'
+            });
+        } catch (error) {
+            console.error('Error in refreshToken:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors du renouvellement des tokens'
+            });
+        }
+    },
     async register(req, res) {
         try {
             const { email, firstName, lastName, password, phone, company } = req.body;
