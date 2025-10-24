@@ -224,7 +224,7 @@ const authController = {
             }
 
             // Génération des tokens
-            const { accessToken } = authController.generateTokens(fetchedUser.id, fetchedUser.role);
+            const { accessToken, refreshToken } = authController.generateTokens(fetchedUser.id, fetchedUser.role);
 
             // Retrait du mot de passe pour la réponse
             const { password: _, ...userWithoutPassword } = fetchedUser;
