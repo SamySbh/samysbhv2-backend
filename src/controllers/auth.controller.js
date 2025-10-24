@@ -233,7 +233,8 @@ const authController = {
                 success: true,
                 data: {
                     user: userWithoutPassword,
-                    accessToken
+                    accessToken,
+                    refreshToken
                 },
                 message: 'Connexion réussie'
             });
