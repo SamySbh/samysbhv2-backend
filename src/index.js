@@ -49,9 +49,17 @@ app.use(helmet({
     referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
 
-app.use(limiter); // ← Applique à toutes les routes
+// Rate limiting global (protection DDoS basique)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Max 100 requêtes par IP
+    message: 'Trop de requêtes, veuillez réessayer plus tard',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
-// Rate limiting strict pour les endpoints sensibles
+app.use(limiter);
+
 const strictLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5, // Max 5 tentatives en 15 min
@@ -65,9 +73,9 @@ app.use('/services', serviceRouter);
 app.use('/users', userRouter);
 app.use('/orders', orderRouter);
 app.use('/order-items', orderItemRouter);
-app.use('/auth', authRouter)
-app.use('/payments', paymentRouter);
-app.use('/upload', uploadRouter);
+app.use('/auth', strictLimiter, authRouter)
+app.use('/payments', strictLimiter, paymentRouter);
+app.use('/upload', strictLimiter, uploadRouter);
 
 app.listen(port, () => {
     console.log(`My API app listening on port ${port}`);
