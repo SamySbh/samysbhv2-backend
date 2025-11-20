@@ -62,7 +62,7 @@ app.use(limiter);
 
 const strictLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5, // Max 5 tentatives en 15 min
+    max: 10, // Max 5 tentatives en 15 min
     message: 'Trop de tentatives, compte temporairement bloqué'
 });
 
