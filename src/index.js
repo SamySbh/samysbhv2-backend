@@ -14,6 +14,7 @@ import uploadRouter from './routes/upload.routes.js';
 
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // Obtenir le chemin du répertoire actuel (avec ESM)
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +48,16 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
+
+app.use(limiter); // ← Applique à toutes les routes
+
+// Rate limiting strict pour les endpoints sensibles
+const strictLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, // Max 5 tentatives en 15 min
+    message: 'Trop de tentatives, compte temporairement bloqué'
+});
+
 app.use(express.json());
 app.use(cors())
 
