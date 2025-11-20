@@ -31,7 +31,22 @@ app.use('/uploads', express.static(uploadsPath));
 
 app.use('/payments', webhookRouter);
 
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+            frameSrc: ["'self'", "https://js.stripe.com"],
+            connectSrc: ["'self'", "https://api.stripe.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            styleSrc: ["'self'", "'unsafe-inline'"]
+        }
+    },
+    crossOriginEmbedderPolicy: { policy: "credentialless" },
+    crossOriginOpenerPolicy: { policy: "same-origin" },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" }
+}));
 app.use(express.json());
 app.use(cors())
 
