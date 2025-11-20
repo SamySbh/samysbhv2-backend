@@ -13,6 +13,7 @@ import {paymentRouter, webhookRouter} from './routes/payment.routes.js';
 import uploadRouter from './routes/upload.routes.js';
 
 import cors from 'cors';
+import helmet from 'helmet';
 
 // Obtenir le chemin du répertoire actuel (avec ESM)
 const __filename = fileURLToPath(import.meta.url);
@@ -30,9 +31,8 @@ app.use('/uploads', express.static(uploadsPath));
 
 app.use('/payments', webhookRouter);
 
-// Middleware to parse JSON request bodies.
+app.use(helmet());
 app.use(express.json());
-
 app.use(cors())
 
 app.use('/services', serviceRouter);
