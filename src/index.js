@@ -49,21 +49,38 @@ app.use(helmet({
     referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
 
-// Rate limiting global (protection DDoS basique)
-const limiter = rateLimit({
+import rateLimit from 'express-rate-limit';
+
+// Configuration du rate limiter général
+const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Max 100 requêtes par IP
-    message: 'Trop de requêtes, veuillez réessayer plus tard',
+    max: 100, // Max 100 requêtes par fenêtre
     standardHeaders: true,
     legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Trop de requêtes',
+            message: 'Vous avez dépassé la limite autorisée. Veuillez réessayer dans 15 minutes.',
+            retryAfter: '15 minutes'
+        });
+    }
 });
 
-app.use(limiter);
-
+// Configuration du rate limiter strict pour les routes sensibles
 const strictLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10, // Max 5 tentatives en 15 min
-    message: 'Trop de tentatives, compte temporairement bloqué'
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Max 10 tentatives
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Trop de tentatives',
+            message: 'Compte temporairement bloqué pour 15 minutes',
+            retryAfter: '15 minutes'
+        });
+    }
 });
 
 app.use(express.json());
