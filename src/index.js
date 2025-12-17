@@ -49,8 +49,6 @@ app.use(helmet({
     referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
 
-import rateLimit from 'express-rate-limit';
-
 // Configuration du rate limiter général
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
