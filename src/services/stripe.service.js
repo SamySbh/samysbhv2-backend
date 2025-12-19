@@ -1,4 +1,4 @@
-import stripeSDK from "../configs/stripe.js"
+import stripeSDK from "../configs/stripe.config.js"
 
 const StripeService = {
     async addProduct(data) {

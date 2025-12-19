@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import stripe from '../configs/stripe.js';
+import stripe from '../configs/stripe.config.js';
 
 const prisma = new PrismaClient();
 

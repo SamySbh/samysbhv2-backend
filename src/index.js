@@ -9,12 +9,13 @@ import userRouter from './routes/user.routes.js';
 import orderRouter from './routes/order.routes.js';
 import orderItemRouter from './routes/order-item.routes.js';
 import authRouter from './routes/auth.routes.js'
-import {paymentRouter, webhookRouter} from './routes/payment.routes.js';
+import { paymentRouter, webhookRouter } from './routes/payment.routes.js';
 import uploadRouter from './routes/upload.routes.js';
 
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import logger from './configs/logger.config.js';
 
 // Obtenir le chemin du répertoire actuel (avec ESM)
 const __filename = fileURLToPath(import.meta.url);
@@ -27,7 +28,7 @@ const port = process.env.PORT;
 app.use(express.static('public'));
 
 // Configurer le middleware pour servir les images uploadées
-const uploadsPath = path.join(__dirname, 'src/assets/uploads');
+const uploadsPath = path.join(__dirname, 'assets/uploads');
 app.use('/uploads', express.static(uploadsPath));
 
 app.use('/payments', webhookRouter);
@@ -93,6 +94,7 @@ app.use('/payments', strictLimiter, paymentRouter);
 app.use('/upload', strictLimiter, uploadRouter);
 
 app.listen(port, () => {
-    console.log(`My API app listening on port ${port}`);
-    console.log(`Uploads directory configured at: ${uploadsPath}`);
+    logger.info(`🚀 API démarrée avec succès sur le port ${port}`);
+    logger.info(`Environnement: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`📁 Répertoire uploads configuré: ${uploadsPath}`);
 });

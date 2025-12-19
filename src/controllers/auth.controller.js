@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import StripeService from '../services/stripe.service.js';
 import EmailService from '../services/email.service.js';
+import logger from '../configs/logger.config.js';
 
 const prisma = new PrismaClient();
 
@@ -20,11 +21,13 @@ const authController = {
         );
         return { accessToken, refreshToken };
     },
+
     async refreshToken(req, res) {
         try {
             const { refreshToken } = req.body;
 
             if (!refreshToken) {
+                logger.warn('🔒 Tentative de refresh token sans token fourni', { ip: req.ip });
                 return res.status(400).json({
                     success: false,
                     message: 'Refresh token manquant'
@@ -36,6 +39,10 @@ const authController = {
             try {
                 decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
             } catch (error) {
+                logger.warn('🔒 Tentative de refresh avec token invalide ou expiré', {
+                    ip: req.ip,
+                    error: error.message
+                });
                 return res.status(401).json({
                     success: false,
                     message: 'Refresh token invalide ou expiré'
@@ -48,6 +55,10 @@ const authController = {
             });
 
             if (!user || user.role === 'DISABLED') {
+                logger.warn('🔒 Tentative de refresh pour utilisateur désactivé ou introuvable', {
+                    userId: decoded.id,
+                    ip: req.ip
+                });
                 return res.status(403).json({
                     success: false,
                     message: 'Utilisateur désactivé ou introuvable'
@@ -57,19 +68,30 @@ const authController = {
             // Générer de nouveaux tokens
             const tokens = authController.generateTokens(user.id, user.role);
 
+            logger.info('✅ Tokens renouvelés avec succès', {
+                userId: user.id,
+                email: user.email,
+                ip: req.ip
+            });
+
             return res.status(200).json({
                 success: true,
                 data: tokens,
                 message: 'Tokens renouvelés avec succès'
             });
         } catch (error) {
-            console.error('Error in refreshToken:', error);
+            logger.error('❌ Erreur lors du renouvellement des tokens', {
+                error: error.message,
+                stack: error.stack,
+                ip: req.ip
+            });
             return res.status(500).json({
                 success: false,
                 message: 'Erreur lors du renouvellement des tokens'
             });
         }
     },
+
     async register(req, res) {
         try {
             const { email, firstName, lastName, password, phone, company } = req.body;
@@ -80,6 +102,10 @@ const authController = {
             });
 
             if (existingUser) {
+                logger.warn('🔒 Tentative d\'inscription avec email déjà utilisé', {
+                    email,
+                    ip: req.ip
+                });
                 return res.status(409).json({
                     success: false,
                     message: 'Cet email est déjà utilisé'
@@ -117,10 +143,29 @@ const authController = {
                     data: { stripeCustomerId: stripeCustomer.id }
                 });
 
+                logger.info('✅ Nouvelle inscription réussie', {
+                    userId: updatedUser.id,
+                    email: updatedUser.email,
+                    ip: req.ip
+                });
+
+                const { password: _, ...userWithoutPassword } = updatedUser;
+
+                return res.status(201).json({
+                    success: true,
+                    data: { user: userWithoutPassword },
+                    message: 'Inscription réussie. Veuillez vérifier votre email.'
+                });
+
             } else {
                 // Si la création du client Stripe échoue, supprimer l'utilisateur
                 await prisma.user.delete({
                     where: { id: newUser.id }
+                });
+
+                logger.error('❌ Échec création client Stripe lors de l\'inscription', {
+                    email,
+                    ip: req.ip
                 });
 
                 return res.status(502).json({
@@ -129,17 +174,13 @@ const authController = {
                 });
             }
 
-
-
-            const { password: _, ...userWithoutPassword } = updatedUser;
-
-            return res.status(201).json({
-                success: true,
-                data: { user: userWithoutPassword },
-                message: 'Inscription réussie. Veuillez vérifier votre email.'
-            });
         } catch (error) {
-            console.error('Error in register:', error);
+            logger.error('❌ Erreur lors de l\'inscription', {
+                error: error.message,
+                stack: error.stack,
+                email: req.body.email,
+                ip: req.ip
+            });
             return res.status(500).json({
                 success: false,
                 message: 'Erreur lors de l\'inscription'
@@ -167,12 +208,22 @@ const authController = {
                 updatedUser.role
             );
 
+            logger.info('✅ Email vérifié avec succès', {
+                userId: updatedUser.id,
+                email: updatedUser.email,
+                ip: req.ip
+            });
+
             // Rediriger vers le frontend avec les tokens
             return res.redirect(
                 `${process.env.FRONTEND_URL}/email-verification?token=${accessToken}`
             );
         } catch (error) {
-            console.error('Error in verifyEmail:', error);
+            logger.error('❌ Erreur lors de la vérification d\'email', {
+                error: error.message,
+                errorType: error.name,
+                ip: req.ip
+            });
 
             // Déterminer le type d'erreur
             if (error.name === 'TokenExpiredError') {
@@ -199,6 +250,10 @@ const authController = {
             });
 
             if (!fetchedUser) {
+                logger.warn('🔒 Tentative de connexion - utilisateur inexistant', {
+                    email,
+                    ip: req.ip
+                });
                 return res.status(401).json({
                     success: false,
                     message: 'Email ou mot de passe incorrect'
@@ -207,6 +262,11 @@ const authController = {
 
             // Vérification du statut du compte
             if (fetchedUser.role === 'DISABLED') {
+                logger.warn('🔒 Tentative de connexion - compte désactivé', {
+                    userId: fetchedUser.id,
+                    email,
+                    ip: req.ip
+                });
                 return res.status(403).json({
                     success: false,
                     message: 'Ce compte a été désactivé'
@@ -217,6 +277,11 @@ const authController = {
             const passwordMatch = await bcrypt.compare(password, fetchedUser.password);
 
             if (!passwordMatch) {
+                logger.warn('🔒 Tentative de connexion - mot de passe incorrect', {
+                    userId: fetchedUser.id,
+                    email,
+                    ip: req.ip
+                });
                 return res.status(401).json({
                     success: false,
                     message: 'Email ou mot de passe incorrect'
@@ -229,6 +294,13 @@ const authController = {
             // Retrait du mot de passe pour la réponse
             const { password: _, ...userWithoutPassword } = fetchedUser;
 
+            logger.info('✅ Connexion réussie', {
+                userId: fetchedUser.id,
+                email,
+                role: fetchedUser.role,
+                ip: req.ip
+            });
+
             return res.status(200).json({
                 success: true,
                 data: {
@@ -240,7 +312,12 @@ const authController = {
             });
 
         } catch (error) {
-            console.error('Error in login :', error);
+            logger.error('❌ Erreur lors de la connexion', {
+                error: error.message,
+                stack: error.stack,
+                email: req.body.email,
+                ip: req.ip
+            });
             return res.status(500).json({
                 success: false,
                 message: 'Erreur lors de la connexion'
@@ -259,7 +336,11 @@ const authController = {
                 message: 'Profil récupéré avec succès'
             });
         } catch (error) {
-            console.error('Error in getProfile :', error);
+            logger.error('❌ Erreur lors de la récupération du profil', {
+                error: error.message,
+                userId: req.user?.id,
+                ip: req.ip
+            });
             return res.status(500).json({
                 success: false,
                 message: 'Erreur lors de la récupération du profil'
@@ -270,13 +351,16 @@ const authController = {
     async updateProfile(req, res) {
         try {
             // Extraire les données validées du corps de la requête
-            // Le validateur attend que tout soit dans req.body
             const { firstName, lastName, phone, company, currentPassword, newPassword } = req.body;
             const userId = req.user.id;
 
             // Récupérer l'utilisateur actuel
             const fetchedUser = await prisma.user.findUnique({ where: { id: userId } });
             if (!fetchedUser) {
+                logger.warn('🔒 Tentative de mise à jour profil - utilisateur introuvable', {
+                    userId,
+                    ip: req.ip
+                });
                 return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
             }
 
@@ -292,16 +376,26 @@ const authController = {
             if (company) updateData.company = company;
 
             // Traiter le changement de mot de passe si nécessaire
-            // Remarque: le validateur a déjà vérifié que si newPassword est présent, currentPassword l'est aussi
             if (newPassword) {
                 const passwordMatch = await bcrypt.compare(currentPassword, fetchedUser.password);
                 if (!passwordMatch) {
+                    logger.warn('🔒 Tentative changement mot de passe - mot de passe actuel incorrect', {
+                        userId,
+                        email: fetchedUser.email,
+                        ip: req.ip
+                    });
                     return res.status(400).json({ success: false, message: "Mot de passe actuel incorrect" });
                 }
 
                 // Hasher le nouveau mot de passe
                 const saltRounds = 10;
                 updateData.password = await bcrypt.hash(newPassword, saltRounds);
+
+                logger.info('✅ Mot de passe modifié avec succès', {
+                    userId,
+                    email: fetchedUser.email,
+                    ip: req.ip
+                });
             }
 
             // Mise à jour de l'utilisateur avec toutes les données modifiées
@@ -313,6 +407,12 @@ const authController = {
             // Retirer le mot de passe de la réponse
             const { password, ...updatedUserWithoutPassword } = updatedUser;
 
+            logger.info('✅ Profil mis à jour avec succès', {
+                userId,
+                email: updatedUser.email,
+                ip: req.ip
+            });
+
             return res.status(200).json({
                 success: true,
                 data: { user: updatedUserWithoutPassword },
@@ -320,12 +420,15 @@ const authController = {
             });
 
         } catch (error) {
-            console.error("Error in updateProfile:", error);
+            logger.error('❌ Erreur lors de la mise à jour du profil', {
+                error: error.message,
+                stack: error.stack,
+                userId: req.user?.id,
+                ip: req.ip
+            });
             return res.status(500).json({ success: false, message: "Erreur lors de la mise à jour du profil" });
         }
     }
 };
-
-
 
 export default authController;
