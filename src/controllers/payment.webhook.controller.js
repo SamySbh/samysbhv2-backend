@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import stripe from '../configs/config.stripe.js';
+import stripe from '../configs/stripe.config.js';
 import EmailService from '../services/email.service.js';
 import logger from '../configs/logger.config.js';
 
