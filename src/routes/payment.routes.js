@@ -75,4 +75,7 @@ paymentRouter.get('/sessions',
 
 // Webhook appelé par Stripe - Aucune authentification JWT
 // La sécurité est assurée par la vérification de la signature Stripe
+
 webhookRouter.post('/stripe', stripeWebhookMiddleware, webhookController.handleWebhook);
+
+export { paymentRouter, webhookRouter };
