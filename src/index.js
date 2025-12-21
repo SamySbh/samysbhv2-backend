@@ -31,7 +31,7 @@ app.use(express.static('public'));
 const uploadsPath = path.join(__dirname, 'assets/uploads');
 app.use('/uploads', express.static(uploadsPath));
 
-app.use('/payments', webhookRouter);
+app.use('/webhooks', webhookRouter);
 
 app.use(helmet({
     contentSecurityPolicy: {
