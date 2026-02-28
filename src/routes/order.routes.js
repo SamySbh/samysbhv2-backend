@@ -116,6 +116,10 @@ orderRouter.get('/my-orders',
 
             const orders = await prisma.order.findMany({
                 where: { userId },
+                include: {
+                    projectRequests: true,
+                    orderItems: { include: { service: true } },
+                },
                 orderBy: { createdAt: 'desc' }
             });
 
@@ -197,6 +201,52 @@ orderRouter.delete('/:id',
     requireAdmin,
     zodValidator(orderIdValidator),
     orderController.deleteOrder
+);
+
+// Routes devis (accepter/refuser) - accessibles par le propriétaire
+orderRouter.post('/:id/accept-quote',
+    protect,
+    canAccessOrder,
+    orderController.acceptQuote
+);
+
+orderRouter.post('/:id/reject-quote',
+    protect,
+    canAccessOrder,
+    orderController.rejectQuote
+);
+
+// Route admin : mettre à jour l'URL du devis
+orderRouter.patch('/admin/:id/quote-url',
+    protect,
+    requireAdmin,
+    orderController.updateQuoteUrl
+);
+
+// NOUVELLES ROUTES pour le système de paiement en deux phases
+
+// POST /orders/:id/payment-link - Générer un lien de paiement (acompte ou solde)
+// Accessible par le propriétaire de la commande ou un admin
+orderRouter.post('/:id/payment-link',
+    protect,
+    canAccessOrder,
+    orderController.generatePaymentLink
+);
+
+// GET /orders/:id/details - Récupérer une commande avec tous les détails (user, items, projectRequests)
+// Accessible par le propriétaire de la commande ou un admin
+orderRouter.get('/:id/details',
+    protect,
+    canAccessOrder,
+    orderController.getOrderWithDetails
+);
+
+// POST /orders/admin/create-manual - Créer une commande manuellement (admin uniquement)
+// Pour convertir une demande de projet en commande
+orderRouter.post('/admin/create-manual',
+    protect,
+    requireAdmin,
+    orderController.createManualOrder
 );
 
 export default orderRouter;

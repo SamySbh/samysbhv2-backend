@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import OrderService from '../services/order.service.js';
+import EmailService from '../services/email.service.js';
 
 const prisma = new PrismaClient()
 
@@ -221,6 +222,222 @@ const orderController = {
                 success: false,
                 message: 'Erreur lors de la suppression de la commande'
             })
+        }
+    },
+
+    // POST /api/orders/:id/payment-link - Générer lien de paiement
+    async generatePaymentLink(req, res) {
+        try {
+            const { id } = req.params;
+            const { paymentType } = req.body; // 'deposit' ou 'final'
+
+            if (!['deposit', 'final'].includes(paymentType)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Type de paiement invalide (deposit ou final)',
+                });
+            }
+
+            const paymentSession = await OrderService.createPaymentSession(id, paymentType);
+
+            return res.status(200).json({
+                success: true,
+                data: paymentSession,
+                message: 'Lien de paiement généré avec succès'
+            });
+        } catch (error) {
+            console.error('Error in generatePaymentLink:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    // POST /api/orders/admin/create-manual - Créer commande manuelle (admin)
+    async createManualOrder(req, res) {
+        try {
+            const order = await OrderService.createManualOrder(req.body);
+
+            return res.status(201).json({
+                success: true,
+                data: order,
+                message: 'Commande créée avec succès',
+            });
+        } catch (error) {
+            console.error('Error in createManualOrder:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    // PATCH /api/admin/orders/:id/status - Mettre à jour le statut principal (admin)
+    async updateOrderStatus(req, res) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+
+            if (!status) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Le statut est requis',
+                });
+            }
+
+            const fetchedOrder = await prisma.order.findUnique({
+                where: { id }
+            });
+
+            if (!fetchedOrder) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Commande non trouvée'
+                });
+            }
+
+            const updatedOrder = await prisma.order.update({
+                where: { id },
+                data: {
+                    statusMain: status,
+                    updatedAt: new Date()
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: updatedOrder,
+                message: 'Statut de la commande mis à jour'
+            });
+        } catch (error) {
+            console.error('Error in updateOrderStatus:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    // POST /api/orders/:id/accept-quote - Accepter un devis
+    async acceptQuote(req, res) {
+        try {
+            const { id } = req.params;
+            const order = await OrderService.acceptQuote(id);
+
+            return res.status(200).json({
+                success: true,
+                data: order,
+                message: 'Devis accepté avec succès',
+            });
+        } catch (error) {
+            console.error('Error in acceptQuote:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    // POST /api/orders/:id/reject-quote - Refuser un devis
+    async rejectQuote(req, res) {
+        try {
+            const { id } = req.params;
+            const { reason } = req.body;
+
+            const order = await OrderService.rejectQuote(id, reason);
+
+            // Envoyer email a l'admin (non bloquant)
+            if (order.user) {
+                EmailService.sendQuoteRejectedEmailToAdmin(
+                    order.user.email,
+                    `${order.user.firstName} ${order.user.lastName}`,
+                    order.id,
+                    reason
+                ).catch((emailError) => {
+                    console.error('Erreur envoi email admin:', emailError);
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: order,
+                message: 'Devis refusé',
+            });
+        } catch (error) {
+            console.error('Error in rejectQuote:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    // PATCH /api/orders/admin/:id/quote-url - Mettre a jour l'URL du devis (admin)
+    async updateQuoteUrl(req, res) {
+        try {
+            const { id } = req.params;
+            const { quoteUrl } = req.body;
+
+            if (!quoteUrl) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'L\'URL du devis est requise',
+                });
+            }
+
+            const order = await OrderService.updateQuoteUrl(id, quoteUrl);
+
+            // Envoyer email au client (non bloquant)
+            if (order.user) {
+                EmailService.sendQuoteReadyEmail(
+                    order.user.email,
+                    `${order.user.firstName} ${order.user.lastName}`,
+                    order.id,
+                    order.totalAmount,
+                    quoteUrl
+                ).catch((emailError) => {
+                    console.error('Erreur envoi email client:', emailError);
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: order,
+                message: 'Devis mis à jour et email envoyé',
+            });
+        } catch (error) {
+            console.error('Error in updateQuoteUrl:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    // GET /api/orders/:id/details - Récupérer une commande avec tous les détails
+    async getOrderWithDetails(req, res) {
+        try {
+            const { id } = req.params;
+            const order = await OrderService.findById(id);
+
+            if (!order) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Commande non trouvée',
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: order,
+            });
+        } catch (error) {
+            console.error('Error in getOrderWithDetails:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
         }
     }
 }

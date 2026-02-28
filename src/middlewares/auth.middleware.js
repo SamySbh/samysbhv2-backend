@@ -86,6 +86,32 @@ export const requireRole = (role) => {
     };
 };
 
+// Middleware d'authentification optionnel
+// Attache req.user si un token valide est présent, sinon continue sans bloquer
+export const optionalAuth = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return next(); // Pas de token, continuer sans user
+        }
+
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id }
+        });
+
+        if (user && user.role !== 'DISABLED') {
+            req.user = user;
+        }
+    } catch {
+        // Token invalide/expiré : on continue sans user
+    }
+
+    next();
+};
+
 // Création d'un middleware spécifique pour le rôle ADMIN
 export const requireAdmin = requireRole('ADMIN');
 

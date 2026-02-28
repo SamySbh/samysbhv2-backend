@@ -216,7 +216,7 @@ const authController = {
 
             // Rediriger vers le frontend avec les tokens
             return res.redirect(
-                `${process.env.FRONTEND_URL}/email-verification?token=${accessToken}`
+                `${process.env.CLIENT_URL}/email-verification?token=${accessToken}`
             );
         } catch (error) {
             logger.error('❌ Erreur lors de la vérification d\'email', {
@@ -229,13 +229,13 @@ const authController = {
             if (error.name === 'TokenExpiredError') {
                 // Rediriger vers le frontend avec un message d'erreur
                 return res.redirect(
-                    `${process.env.FRONTEND_URL}/email-verification?error=expired`
+                    `${process.env.CLIENT_URL}/email-verification?error=expired`
                 );
             }
 
             // Rediriger vers le frontend avec un message d'erreur générique
             return res.redirect(
-                `${process.env.FRONTEND_URL}/email-verification?error=failed`
+                `${process.env.CLIENT_URL}/email-verification?error=failed`
             );
         }
     },

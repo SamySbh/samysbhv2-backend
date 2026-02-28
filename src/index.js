@@ -11,6 +11,8 @@ import orderItemRouter from './routes/order-item.routes.js';
 import authRouter from './routes/auth.routes.js'
 import { paymentRouter, webhookRouter } from './routes/payment.routes.js';
 import uploadRouter from './routes/upload.routes.js';
+import projectRequestRouter from './routes/project-request.routes.js';
+import adminRouter from './routes/admin.routes.js';
 
 import cors from 'cors';
 import helmet from 'helmet';
@@ -83,7 +85,25 @@ const strictLimiter = rateLimit({
 });
 
 app.use(express.json());
-app.use(cors())
+
+// Configuration CORS avec whitelist
+const allowedOrigins = [
+    process.env.CLIENT_URL,           // Local : http://localhost:5173
+    'https://samysbh.fr',             // Production
+    'https://www.samysbh.fr',         // Production (www)
+].filter(Boolean);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Autoriser les requêtes sans origin (Postman, curl, webhooks Stripe)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`Origin ${origin} non autorisée par CORS`));
+        }
+    },
+    credentials: true,
+}))
 
 app.use('/services', serviceRouter);
 app.use('/users', userRouter);
@@ -92,6 +112,8 @@ app.use('/order-items', orderItemRouter);
 app.use('/auth', strictLimiter, authRouter)
 app.use('/payments', strictLimiter, paymentRouter);
 app.use('/upload', strictLimiter, uploadRouter);
+app.use('/project-requests', projectRequestRouter);
+app.use('/admin', adminRouter);
 
 app.listen(port, () => {
     logger.info(`🚀 API démarrée avec succès sur le port ${port}`);

@@ -65,6 +65,19 @@ model Order {
   userId                String        @db.ObjectId
   user                  User          @relation(fields: [userId], references: [id])
   orderItems            OrderItem[]
+
+  // NOUVEAUX CHAMPS pour le système de paiement acompte/solde
+  depositPaidAt            DateTime?
+  depositStripeSessionId   String?
+
+  finalPaidAt              DateTime?
+  finalStripeSessionId     String?
+
+  quoteUrl                 String?
+  quoteRejectedReason      String?
+
+  // Relation inverse vers ProjectRequest
+  projectRequests          ProjectRequest[]
 }
 
 enum StatusMain {
@@ -82,6 +95,15 @@ enum StatusPayment {
   FULLY_PAID
 }
 
+// Nouvel enum pour les statuts de demande
+enum RequestStatus {
+  PENDING      // Reçue, en attente de traitement
+  QUOTED       // Devis envoyé
+  ACCEPTED     // Client a accepté (commande créée)
+  REJECTED     // Client a refusé
+  ARCHIVED     // Archivée
+}
+
 model OrderItem {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   unitAmount  Float
@@ -93,4 +115,36 @@ model OrderItem {
   order       Order     @relation(fields: [orderId], references: [id])
   serviceId   String    @db.ObjectId
   service     Service   @relation(fields: [serviceId], references: [id])
+}
+
+// Nouveau modèle ProjectRequest
+model ProjectRequest {
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Info client
+  email                String
+  name                 String
+  phone                String?
+  company              String?
+
+  // Services du panier (snapshot JSON)
+  requestedServices    Json          // Structure: [{ serviceId, serviceName, quantity, price }]
+  estimatedTotal       Float
+
+  // Détails projet
+  projectDescription   String
+  desiredDeadline      String        // "< 1 mois", "1-3 mois", etc.
+  hasExistingSite      Boolean       @default(false)
+  existingSiteUrl      String?
+  additionalInfo       String?
+
+  // Workflow
+  status               RequestStatus @default(PENDING)
+  orderId              String?       @db.ObjectId
+  order                Order?        @relation(fields: [orderId], references: [id])
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@map("project_requests")
 }

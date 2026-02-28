@@ -113,21 +113,23 @@ const webhookController = {
     async handleCheckoutSessionCompleted(session) {
         try {
             const orderId = session.metadata.orderId;
-            
-            logger.info('🔄 Début traitement paiement réussi', { 
+            const paymentType = session.metadata.paymentType; // 'deposit' ou 'final'
+
+            logger.info('🔄 Début traitement paiement réussi', {
                 orderId,
-                sessionId: session.id 
+                sessionId: session.id,
+                paymentType: paymentType || 'non spécifié (ancien système)'
             });
-            
+
             const fetchedOrder = await prisma.order.findUnique({
                 where: { id: orderId },
                 include: { user: true }
             });
 
             if (!fetchedOrder) {
-                logger.error('❌ Commande introuvable pour le paiement', { 
+                logger.error('❌ Commande introuvable pour le paiement', {
                     orderId,
-                    sessionId: session.id 
+                    sessionId: session.id
                 });
                 return {
                     success: false,
@@ -135,13 +137,62 @@ const webhookController = {
                 };
             }
 
-            const updatedOrder = await prisma.order.update({
-                where: { id: orderId },
-                data: {
+            let updateData;
+            let emailSubject;
+
+            // Gestion selon le type de paiement
+            if (paymentType === 'deposit') {
+                // Paiement de l'acompte (30%)
+                updateData = {
+                    statusPayment: 'DEPOSIT_PAID',
+                    depositPaidAt: new Date(),
+                    statusMain: 'IN_PROGRESS', // Le projet peut commencer
+                    stripePaymentIntentId: session.payment_intent,
+                    updatedAt: new Date()
+                };
+                emailSubject = 'Acompte reçu - Projet en cours';
+
+                logger.info('✅ Acompte payé pour commande', {
+                    orderId,
+                    amount: session.amount_total / 100,
+                    paymentIntentId: session.payment_intent
+                });
+
+            } else if (paymentType === 'final') {
+                // Paiement du solde (70%)
+                updateData = {
+                    statusPayment: 'FULLY_PAID',
+                    finalPaidAt: new Date(),
+                    statusMain: 'COMPLETED', // Projet terminé
+                    stripePaymentIntentId: session.payment_intent,
+                    updatedAt: new Date()
+                };
+                emailSubject = 'Paiement final reçu - Projet terminé';
+
+                logger.info('✅ Solde payé pour commande', {
+                    orderId,
+                    amount: session.amount_total / 100,
+                    paymentIntentId: session.payment_intent
+                });
+
+            } else {
+                // Rétrocompatibilité avec l'ancien système (sans paymentType)
+                updateData = {
                     statusPayment: 'DEPOSIT_PAID',
                     stripePaymentIntentId: session.payment_intent,
                     updatedAt: new Date()
-                }
+                };
+                emailSubject = 'Paiement reçu';
+
+                logger.warn('⚠️ Paiement sans type spécifié (ancien système)', {
+                    orderId,
+                    sessionId: session.id
+                });
+            }
+
+            const updatedOrder = await prisma.order.update({
+                where: { id: orderId },
+                data: updateData
             });
 
             // Envoie du mail de confirmation
@@ -149,13 +200,14 @@ const webhookController = {
                 fetchedOrder.user.email,
                 updatedOrder
             );
-            
-            logger.info('✅ Paiement validé et email envoyé', { 
+
+            logger.info('✅ Paiement validé et email envoyé', {
                 orderId,
                 userId: fetchedOrder.userId,
                 userEmail: fetchedOrder.user.email,
                 amount: session.amount_total / 100,
-                paymentIntentId: session.payment_intent 
+                paymentType: paymentType || 'legacy',
+                paymentIntentId: session.payment_intent
             });
 
             return {
@@ -165,11 +217,11 @@ const webhookController = {
             };
 
         } catch (error) {
-            logger.error('❌ Erreur lors du traitement du paiement réussi', { 
+            logger.error('❌ Erreur lors du traitement du paiement réussi', {
                 error: error.message,
                 stack: error.stack,
                 orderId: session.metadata?.orderId,
-                sessionId: session.id 
+                sessionId: session.id
             });
             throw error;
         }
