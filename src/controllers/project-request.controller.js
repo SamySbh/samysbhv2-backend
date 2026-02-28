@@ -25,15 +25,20 @@ class ProjectRequestController {
         });
       }
 
-      // Envoyer l'email de confirmation (non bloquant)
+      // Envoyer les emails de confirmation (non bloquants)
       EmailService.sendOrderCreatedEmail(
         projectRequest.email,
         projectRequest.name,
         order ? order.id : projectRequest.id,
         projectRequest.estimatedTotal
       ).catch((emailError) => {
-        console.error('Erreur envoi email confirmation:', emailError);
+        console.error('Erreur envoi email confirmation client:', emailError);
       });
+
+      EmailService.sendAdminNewRequestNotification(projectRequest)
+        .catch((emailError) => {
+          console.error('Erreur envoi email notification admin:', emailError);
+        });
 
       return res.status(201).json({
         success: true,

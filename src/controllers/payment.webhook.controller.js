@@ -195,11 +195,26 @@ const webhookController = {
                 data: updateData
             });
 
-            // Envoie du mail de confirmation
-            await EmailService.sendPaymentConfirmationEmail(
-                fetchedOrder.user.email,
-                updatedOrder
-            );
+            // Envoyer l'email de confirmation spécifique au type de paiement (non bloquant)
+            if (paymentType === 'deposit') {
+                EmailService.sendDepositConfirmation(
+                    fetchedOrder.user.email,
+                    fetchedOrder.user.firstName,
+                    updatedOrder
+                ).catch(err => console.error('Erreur email confirmation acompte:', err));
+            } else if (paymentType === 'final') {
+                EmailService.sendFinalPaymentConfirmation(
+                    fetchedOrder.user.email,
+                    fetchedOrder.user.firstName,
+                    updatedOrder
+                ).catch(err => console.error('Erreur email confirmation finale:', err));
+            } else {
+                // Rétrocompatibilité ancien système
+                EmailService.sendPaymentConfirmationEmail(
+                    fetchedOrder.user.email,
+                    updatedOrder
+                ).catch(err => console.error('Erreur email confirmation paiement:', err));
+            }
 
             logger.info('✅ Paiement validé et email envoyé', {
                 orderId,

@@ -299,6 +299,323 @@ const EmailService = {
         }
     },
 
+    /**
+     * Email de notification nouvelle demande (à l'admin)
+     */
+    async sendAdminNewRequestNotification(projectRequest) {
+        const adminEmail = process.env.EMAIL_USER;
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+    .detail { background: white; padding: 15px; margin: 10px 0; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Nouvelle demande de devis</h2>
+    </div>
+    <div class="content">
+      <div class="detail">
+        <strong>Client :</strong> ${projectRequest.name}<br>
+        <strong>Email :</strong> ${projectRequest.email}<br>
+        <strong>Telephone :</strong> ${projectRequest.phone || 'Non fourni'}<br>
+        <strong>Entreprise :</strong> ${projectRequest.company || 'Particulier'}
+      </div>
+      <div class="detail">
+        <strong>Services demandes :</strong><br>
+        ${projectRequest.requestedServices.map(s =>
+            `- ${s.quantity}x ${s.serviceName} (${s.price.toFixed(2)} EUR)`
+        ).join('<br>')}
+        <br><br>
+        <strong>Total estime :</strong> ${projectRequest.estimatedTotal.toFixed(2)} EUR
+      </div>
+      <div class="detail">
+        <strong>Description du projet :</strong><br>
+        ${projectRequest.projectDescription}
+        <br><br>
+        <strong>Delai souhaite :</strong> ${projectRequest.desiredDeadline}<br>
+        <strong>Site existant :</strong> ${projectRequest.hasExistingSite ? 'Oui' : 'Non'}
+        ${projectRequest.existingSiteUrl ? `<br><strong>URL :</strong> ${projectRequest.existingSiteUrl}` : ''}
+      </div>
+      <a href="${clientUrl}/admin" class="button">Voir dans l'admin</a>
+    </div>
+  </div>
+</body>
+</html>
+        `.trim();
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: adminEmail,
+                subject: `Nouvelle demande de devis - ${projectRequest.name}`,
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending admin notification email:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Email avec lien de paiement acompte (au client)
+     */
+    async sendDepositPaymentLink(clientEmail, clientName, order, paymentUrl) {
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
+    .amount { font-size: 24px; font-weight: bold; color: #7c3aed; text-align: center; margin: 20px 0; }
+    .footer { text-align: center; color: #666; font-size: 0.9rem; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Paiement de l'acompte</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${clientName},</p>
+      <p>Votre projet est valide ! Pour demarrer la realisation, merci de proceder au paiement de l'acompte (30%).</p>
+      <div class="amount">${order.depositAmount.toFixed(2)} EUR</div>
+      <p style="text-align: center;">
+        <a href="${paymentUrl}" class="button">Payer l'acompte maintenant</a>
+      </p>
+      <p><strong>Ce que vous obtenez :</strong></p>
+      <ul>
+        <li>Demarrage immediat de votre projet</li>
+        <li>Suivi regulier de l'avancement</li>
+        <li>Livraison dans les delais convenus</li>
+      </ul>
+      <p><em>Le solde (70%) sera a regler a la livraison du projet.</em></p>
+      <p>A tres vite,<br>Samy</p>
+    </div>
+    <div class="footer">
+      <p>Pour toute question : <a href="mailto:samy.sebahi@yahoo.fr">samy.sebahi@yahoo.fr</a></p>
+    </div>
+  </div>
+</body>
+</html>
+        `.trim();
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: clientEmail,
+                subject: `Paiement de l'acompte - Commande #${order.id.slice(-6)}`,
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending deposit payment link email:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Email confirmation acompte paye (au client)
+     */
+    async sendDepositConfirmation(clientEmail, clientName, order) {
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px; }
+    .success { background: white; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; }
+    .footer { text-align: center; color: #666; font-size: 0.9rem; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Acompte recu !</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${clientName},</p>
+      <div class="success">
+        <strong>Votre paiement de ${order.depositAmount.toFixed(2)} EUR a bien ete recu !</strong>
+      </div>
+      <p>Parfait ! Je demarre immediatement votre projet.</p>
+      <p><strong>Prochaines etapes :</strong></p>
+      <ul>
+        <li>Developpement de votre projet</li>
+        <li>Points reguliers sur l'avancement</li>
+        <li>Livraison et paiement du solde (${(order.totalAmount - order.depositAmount).toFixed(2)} EUR)</li>
+      </ul>
+      <p>Vous pouvez suivre l'avancement dans votre espace client sur samysbh.fr</p>
+      <p>A tres bientot,<br>Samy</p>
+    </div>
+    <div class="footer">
+      <p>Pour toute question : <a href="mailto:samy.sebahi@yahoo.fr">samy.sebahi@yahoo.fr</a></p>
+    </div>
+  </div>
+</body>
+</html>
+        `.trim();
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: clientEmail,
+                subject: 'Acompte recu - Projet en cours',
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending deposit confirmation email:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Email avec lien de paiement du solde (au client)
+     */
+    async sendFinalPaymentLink(clientEmail, clientName, order, paymentUrl) {
+        const finalAmount = order.totalAmount - order.depositAmount;
+
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #fff7ed; padding: 30px; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; background: #ea580c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
+    .amount { font-size: 24px; font-weight: bold; color: #ea580c; text-align: center; margin: 20px 0; }
+    .footer { text-align: center; color: #666; font-size: 0.9rem; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Votre projet est termine !</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${clientName},</p>
+      <p>Excellente nouvelle : votre projet est termine et pret a etre livre !</p>
+      <p>Pour finaliser la livraison, merci de proceder au paiement du solde (70%).</p>
+      <div class="amount">${finalAmount.toFixed(2)} EUR</div>
+      <p style="text-align: center;">
+        <a href="${paymentUrl}" class="button">Payer le solde maintenant</a>
+      </p>
+      <p><strong>Apres paiement, vous recevrez :</strong></p>
+      <ul>
+        <li>Tous les acces a votre site</li>
+        <li>Les fichiers sources</li>
+        <li>La documentation complete</li>
+        <li>Support pendant 30 jours</li>
+      </ul>
+      <p>Merci pour votre confiance !<br>Samy</p>
+    </div>
+    <div class="footer">
+      <p>Pour toute question : <a href="mailto:samy.sebahi@yahoo.fr">samy.sebahi@yahoo.fr</a></p>
+    </div>
+  </div>
+</body>
+</html>
+        `.trim();
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: clientEmail,
+                subject: 'Projet termine - Paiement du solde',
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending final payment link email:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Email confirmation paiement final (au client)
+     */
+    async sendFinalPaymentConfirmation(clientEmail, clientName, order) {
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px; }
+    .success { background: white; border: 2px solid #10b981; padding: 20px; margin: 20px 0; text-align: center; border-radius: 8px; }
+    .footer { text-align: center; color: #666; font-size: 0.9rem; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Projet livre !</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${clientName},</p>
+      <div class="success">
+        <h2 style="color: #10b981; margin: 0;">Paiement recu !</h2>
+        <p style="margin: 10px 0 0 0;">Votre projet est officiellement livre</p>
+      </div>
+      <p>Merci pour votre confiance ! C'etait un plaisir de travailler sur votre projet.</p>
+      <p><strong>N'oubliez pas :</strong></p>
+      <ul>
+        <li>Support gratuit pendant 30 jours</li>
+        <li>N'hesitez pas a me contacter pour toute question</li>
+        <li>Votre avis compte : laissez un temoignage si vous etes satisfait !</li>
+      </ul>
+      <p>Au plaisir de collaborer a nouveau,<br><strong>Samy SEBAHI</strong></p>
+    </div>
+    <div class="footer">
+      <p><a href="mailto:contact@samysbh.fr">contact@samysbh.fr</a> | <a href="https://samysbh.fr">samysbh.fr</a></p>
+    </div>
+  </div>
+</body>
+</html>
+        `.trim();
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: clientEmail,
+                subject: 'Projet livre - Merci pour votre confiance !',
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending final payment confirmation email:', error);
+            return false;
+        }
+    },
+
     async sendPaymentFailureEmail(email, orderDetails, errorReason) {
 
         let userFriendlyReason = "Une erreur s'est produite";
