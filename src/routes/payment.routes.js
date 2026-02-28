@@ -60,6 +60,20 @@ paymentRouter.post('/create-checkout-session',
     paymentController.createCheckoutSession
 );
 
+// Route pour créer une session de paiement d'acompte (30%)
+paymentRouter.post('/orders/:id/deposit-payment',
+    protect,
+    requireAdmin, // Seul l'admin peut générer ces liens
+    paymentController.createDepositSession
+);
+
+// Route pour créer une session de paiement du solde (70%)
+paymentRouter.post('/orders/:id/final-payment',
+    protect,
+    requireAdmin, // Seul l'admin peut générer ces liens
+    paymentController.createFinalSession
+);
+
 // Route administrative pour consulter les sessions de paiement
 paymentRouter.get('/sessions',
     protect,
