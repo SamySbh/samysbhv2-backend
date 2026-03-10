@@ -13,11 +13,13 @@ import { paymentRouter, webhookRouter } from './routes/payment.routes.js';
 import uploadRouter from './routes/upload.routes.js';
 import projectRequestRouter from './routes/project-request.routes.js';
 import adminRouter from './routes/admin.routes.js';
+import iotRouter from './routes/iot.routes.js';
 
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import logger from './configs/logger.config.js';
+import metricsCollector from './services/metrics.service.js';
 
 // Obtenir le chemin du répertoire actuel (avec ESM)
 const __filename = fileURLToPath(import.meta.url);
@@ -86,6 +88,15 @@ const strictLimiter = rateLimit({
 
 app.use(express.json());
 
+// Middleware de collecte de métriques
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        metricsCollector.recordRequest(Date.now() - start, res.statusCode);
+    });
+    next();
+});
+
 // Configuration CORS avec whitelist
 const allowedOrigins = [
     process.env.CLIENT_URL,           // Local : http://localhost:5173
@@ -114,6 +125,7 @@ app.use('/payments', strictLimiter, paymentRouter);
 app.use('/upload', strictLimiter, uploadRouter);
 app.use('/project-requests', projectRequestRouter);
 app.use('/admin', adminRouter);
+app.use('/iot', iotRouter);
 
 app.listen(port, () => {
     logger.info(`🚀 API démarrée avec succès sur le port ${port}`);

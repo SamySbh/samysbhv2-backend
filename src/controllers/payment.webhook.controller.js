@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import stripe from '../configs/stripe.config.js';
 import EmailService from '../services/email.service.js';
 import logger from '../configs/logger.config.js';
+import metricsCollector from '../services/metrics.service.js';
 
 const prisma = new PrismaClient();
 
@@ -29,11 +30,12 @@ const webhookController = {
                     process.env.STRIPE_WEBHOOK_SECRET
                 );
                 
-                logger.info('✅ Webhook Stripe - Signature vérifiée', { 
+                logger.info('✅ Webhook Stripe - Signature vérifiée', {
                     eventType: event.type,
                     eventId: event.id,
-                    ip: req.ip 
+                    ip: req.ip
                 });
+                metricsCollector.recordWebhook();
             } catch (err) {
                 logger.error('❌ Webhook Stripe - Signature invalide', { 
                     error: err.message,

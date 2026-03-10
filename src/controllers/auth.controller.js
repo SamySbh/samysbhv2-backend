@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import StripeService from '../services/stripe.service.js';
 import EmailService from '../services/email.service.js';
 import logger from '../configs/logger.config.js';
+import metricsCollector from '../services/metrics.service.js';
 
 const prisma = new PrismaClient();
 
@@ -254,6 +255,7 @@ const authController = {
                     email,
                     ip: req.ip
                 });
+                metricsCollector.recordAuthFailure();
                 return res.status(401).json({
                     success: false,
                     message: 'Email ou mot de passe incorrect'
@@ -282,6 +284,7 @@ const authController = {
                     email,
                     ip: req.ip
                 });
+                metricsCollector.recordAuthFailure();
                 return res.status(401).json({
                     success: false,
                     message: 'Email ou mot de passe incorrect'
