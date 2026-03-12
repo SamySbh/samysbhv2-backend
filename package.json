@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "serve": "node --watch src/index.js",
-    "start": "node index.js",
+    "start": "prisma generate && node src/index.js",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
