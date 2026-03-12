@@ -117,7 +117,6 @@ orderRouter.get('/my-orders',
             const orders = await prisma.order.findMany({
                 where: { userId },
                 include: {
-                    projectRequests: true,
                     orderItems: { include: { service: true } },
                 },
                 orderBy: { createdAt: 'desc' }
