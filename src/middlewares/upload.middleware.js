@@ -1,58 +1,25 @@
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-// Obtenir le chemin du répertoire actuel (avec ESM)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Chemin d'upload dans le dossier du backend (et non plus dans le frontend)
-const uploadDir = path.join(__dirname, '../src/assets/uploads');
-
-// Créer le dossier d'upload s'il n'existe pas
-const ensureUploadDirExists = () => {
-    if (!fs.existsSync(uploadDir)) {
-        // Créer le chemin de répertoire récursivement
-        fs.mkdirSync(uploadDir, { recursive: true });
-        console.log(`Dossier d'upload créé : ${uploadDir}`);
-    }
-};
-
-// S'assurer que le dossier existe avant de configurer multer
-ensureUploadDirExists();
-
-// Configuration du stockage
-const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        // Vérifier à nouveau au moment de l'upload (par prudence)
-        ensureUploadDirExists();
-        cb(null, uploadDir);
-    },
-    filename: function(req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `service-${uniqueSuffix}${ext}`);
-    }
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Filtrer les types de fichiers acceptés
-const fileFilter = (req, file, cb) => {
-    // Accepter uniquement les images
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Seules les images sont acceptées'), false);
-    }
-};
-
-// Configuration de l'upload
-const upload = multer({ 
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB max
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'samysbh/services',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        transformation: [{ width: 1200, quality: 'auto', fetch_format: 'auto' }],
     },
-    fileFilter: fileFilter
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 export default upload;
