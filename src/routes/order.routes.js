@@ -118,6 +118,7 @@ orderRouter.get('/my-orders',
                 where: { userId },
                 include: {
                     orderItems: { include: { service: true } },
+                    projectRequests: true,
                 },
                 orderBy: { createdAt: 'desc' }
             });
