@@ -132,8 +132,7 @@ const paymentController = {
                     price_data: {
                         currency: 'eur',
                         product_data: {
-                            name: `Acompte (30%) - Commande #${order.id.slice(-6)}`,
-                            description: `Paiement de l'acompte pour votre commande`
+                            name: `Acompte (30%) - Commande #${order.id.slice(-6)}`
                         },
                         unit_amount: Math.round(order.depositAmount * 100)
                     },
@@ -218,8 +217,7 @@ const paymentController = {
                     price_data: {
                         currency: 'eur',
                         product_data: {
-                            name: `Solde (70%) - Commande #${order.id.slice(-6)}`,
-                            description: `Paiement final pour votre commande`
+                            name: `Solde (70%) - Commande #${order.id.slice(-6)}`
                         },
                         unit_amount: Math.round(finalAmount * 100)
                     },

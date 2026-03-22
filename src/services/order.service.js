@@ -55,9 +55,6 @@ const OrderService = {
                             name: paymentType === 'deposit'
                                 ? `Acompte 30% - Commande #${order.id.slice(-6)}`
                                 : `Solde 70% - Commande #${order.id.slice(-6)}`,
-                            description: order.orderItems.map(item =>
-                                `${item.quantity}x ${item.service.name}`
-                            ).join(', '),
                         },
                         unit_amount: Math.round(Number(amount) * 100), // En centimes
                     },
