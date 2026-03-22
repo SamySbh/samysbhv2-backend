@@ -9,7 +9,8 @@
       "Bash(node:*)",
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(find /c/wamp64/www/vuejs-memoire/src -name order* -o -name order*.ts)"
     ]
   }
 }

@@ -89,6 +89,7 @@ enum StatusMain {
 }
 
 enum StatusPayment {
+  QUOTE_PENDING
   PENDING_DEPOSIT
   DEPOSIT_PAID
   PENDING_FINAL

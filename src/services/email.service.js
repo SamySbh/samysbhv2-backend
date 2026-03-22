@@ -616,6 +616,64 @@ const EmailService = {
         }
     },
 
+    // Email : Devis validé par l'admin - le client peut payer l'acompte
+    async sendQuoteValidated(email, name, orderId, totalAmount, depositAmount) {
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const orderUrl = `${clientUrl}/commande/${orderId}`;
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+                    .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
+                    .button { display: inline-block; padding: 15px 30px; background: #7c3aed; color: white !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
+                    .info-box { background: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #7c3aed; }
+                    .footer { text-align: center; color: #666; font-size: 0.9rem; margin-top: 30px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Votre devis est validé !</h1>
+                </div>
+                <div class="content">
+                    <p>Bonjour ${name},</p>
+                    <p>Bonne nouvelle ! Votre devis a été validé et votre commande est prête à démarrer.</p>
+                    <div class="info-box">
+                        <p><strong>Numéro de commande :</strong> #${orderId.slice(-8).toUpperCase()}</p>
+                        <p><strong>Montant total :</strong> ${Number(totalAmount).toFixed(2)} EUR</p>
+                        <p><strong>Acompte à régler (30%) :</strong> ${Number(depositAmount).toFixed(2)} EUR</p>
+                    </div>
+                    <p>Pour démarrer votre projet, réglez l'acompte en cliquant sur le bouton ci-dessous :</p>
+                    <p style="text-align: center;">
+                        <a href="${orderUrl}" class="button">Régler l'acompte</a>
+                    </p>
+                    <p>Le solde (70%) sera à régler à la livraison du projet.</p>
+                    <p>À très bientôt,<br><strong>Samy SEBAHI</strong></p>
+                </div>
+                <div class="footer">
+                    <p>Pour toute question : <a href="mailto:samy.sebahi@yahoo.fr">samy.sebahi@yahoo.fr</a></p>
+                </div>
+            </body>
+            </html>
+        `;
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Votre devis est validé - Réglez votre acompte',
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending quote validated email:', error);
+            return false;
+        }
+    },
+
     async sendPaymentFailureEmail(email, orderDetails, errorReason) {
 
         let userFriendlyReason = "Une erreur s'est produite";

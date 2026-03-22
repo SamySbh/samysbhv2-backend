@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const orderCreationValidator = z.object({
     statusMain: z.enum(["NEW", "VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]),
-    statusPayment: z.enum(["PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]),
+    statusPayment: z.enum(["QUOTE_PENDING", "PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]),
     totalAmount: z.number(),
     depositAmount: z.number(),
     deadlineDate: z.string().datetime().optional(),
@@ -12,7 +12,7 @@ export const orderCreationValidator = z.object({
 export const orderWithItemsValidator = z.object({
     // Données de base de la commande
     statusMain: z.enum(["NEW", "VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]),
-    statusPayment: z.enum(["PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]),
+    statusPayment: z.enum(["QUOTE_PENDING", "PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]),
     totalAmount: z.number(),
     depositAmount: z.number(),
     deadlineDate: z.string().datetime().optional(),
@@ -31,7 +31,7 @@ export const orderWithItemsValidator = z.object({
 
 export const orderModificationValidator = z.object({
     statusMain: z.enum(["NEW", "VALIDATED", "IN_PROGRESS", "COMPLETED", "ARCHIVED"]).optional(),
-    statusPayment: z.enum(["PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]).optional(),
+    statusPayment: z.enum(["QUOTE_PENDING", "PENDING_DEPOSIT", "DEPOSIT_PAID", "PENDING_FINAL", "FULLY_PAID"]).optional(),
     totalAmount: z.number().optional(),
     depositAmount: z.number().optional(),
     deadlineDate: z.string().datetime().optional(),
@@ -42,4 +42,9 @@ export const orderModificationValidator = z.object({
 
 export const orderIdValidator = z.object({
     id: z.string().regex(/^[0-9a-fA-F]{24}$/) // Regex car on utilise des ObjectIds MongoDB
+});
+
+export const quoteValidationValidator = z.object({
+    totalAmount: z.number().positive(),
+    depositAmount: z.number().positive(),
 });

@@ -111,7 +111,7 @@ const OrderService = {
                     depositAmount: depositAmount,
                     deadlineDate: data.dueDate ? new Date(data.dueDate) : null,
                     statusMain: 'NEW',
-                    statusPayment: 'PENDING_DEPOSIT',
+                    statusPayment: 'QUOTE_PENDING',
                 },
             });
 
@@ -129,6 +129,37 @@ const OrderService = {
             return order;
         } catch (error) {
             throw new Error(`Erreur création commande manuelle: ${error.message}`);
+        }
+    },
+
+    // Valider le devis (admin) - passe de QUOTE_PENDING à PENDING_DEPOSIT
+    async validateQuote(orderId, totalAmount, depositAmount) {
+        try {
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+                include: { user: true }
+            });
+
+            if (!order) throw new Error('Commande non trouvée');
+            if (order.statusPayment !== 'QUOTE_PENDING') {
+                throw new Error('Ce devis ne peut pas être validé dans son état actuel');
+            }
+
+            const updatedOrder = await prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    totalAmount,
+                    depositAmount,
+                    statusPayment: 'PENDING_DEPOSIT',
+                    statusMain: 'VALIDATED',
+                    updatedAt: new Date()
+                },
+                include: { user: true }
+            });
+
+            return updatedOrder;
+        } catch (error) {
+            throw new Error(`Erreur validation devis: ${error.message}`);
         }
     },
 

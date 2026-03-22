@@ -222,6 +222,13 @@ orderRouter.patch('/admin/:id/quote-url',
     orderController.updateQuoteUrl
 );
 
+// PATCH /api/orders/:id/validate-quote - Valider le devis (admin)
+orderRouter.patch('/:id/validate-quote',
+    protect,
+    requireAdmin,
+    orderController.validateQuote
+);
+
 // NOUVELLES ROUTES pour le système de paiement en deux phases
 
 // POST /orders/:id/payment-link - Générer un lien de paiement (acompte ou solde)

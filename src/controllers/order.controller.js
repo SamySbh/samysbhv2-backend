@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import OrderService from '../services/order.service.js';
 import EmailService from '../services/email.service.js';
+import logger from '../configs/logger.config.js';
 
 const prisma = new PrismaClient()
 
@@ -411,6 +412,48 @@ const orderController = {
             return res.status(500).json({
                 success: false,
                 message: error.message,
+            });
+        }
+    },
+
+    // PATCH /api/orders/:id/validate-quote - Valider le devis (admin)
+    async validateQuote(req, res) {
+        try {
+            const { id } = req.params;
+            const { totalAmount, depositAmount } = req.body;
+
+            if (!totalAmount || !depositAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'totalAmount et depositAmount sont requis'
+                });
+            }
+
+            const updatedOrder = await OrderService.validateQuote(id, totalAmount, depositAmount);
+
+            // Envoyer un email au client pour l'informer que son devis est prêt
+            try {
+                await EmailService.sendQuoteValidated(
+                    updatedOrder.user.email,
+                    updatedOrder.user.firstName,
+                    updatedOrder.id,
+                    updatedOrder.totalAmount,
+                    updatedOrder.depositAmount
+                );
+            } catch (emailError) {
+                logger.warn('Email de validation devis non envoyé', { error: emailError.message });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: updatedOrder,
+                message: 'Devis validé avec succès'
+            });
+        } catch (error) {
+            logger.error('Error in validateQuote:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message
             });
         }
     },
