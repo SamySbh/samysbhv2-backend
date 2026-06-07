@@ -328,6 +328,83 @@ const authController = {
         }
     },
 
+    async forgotPassword(req, res) {
+        try {
+            const { email } = req.body;
+
+            const user = await prisma.user.findUnique({ where: { email } });
+
+            if (user) {
+                const token = jwt.sign(
+                    { id: user.id, email: user.email },
+                    process.env.JWT_RESET_SECRET,
+                    { expiresIn: process.env.JWT_RESET_EXPIRES_IN }
+                );
+                await EmailService.sendPasswordResetEmail(email, token);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Si cet email existe, un lien a été envoyé.'
+            });
+        } catch (error) {
+            logger.error('❌ Erreur lors du forgot password', {
+                error: error.message,
+                ip: req.ip
+            });
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la demande de réinitialisation'
+            });
+        }
+    },
+
+    async resetPassword(req, res) {
+        try {
+            const { token, newPassword } = req.body;
+
+            let decoded;
+            try {
+                decoded = jwt.verify(token, process.env.JWT_RESET_SECRET);
+            } catch (error) {
+                if (error.name === 'TokenExpiredError') {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Le lien de réinitialisation a expiré. Veuillez en demander un nouveau.'
+                    });
+                }
+                return res.status(400).json({
+                    success: false,
+                    message: 'Token invalide'
+                });
+            }
+
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+            await prisma.user.update({
+                where: { id: decoded.id },
+                data: { password: hashedPassword, updatedAt: new Date() }
+            });
+
+            logger.info('✅ Mot de passe réinitialisé', { userId: decoded.id, ip: req.ip });
+
+            return res.status(200).json({
+                success: true,
+                message: 'Mot de passe modifié avec succès'
+            });
+        } catch (error) {
+            logger.error('❌ Erreur lors du reset password', {
+                error: error.message,
+                ip: req.ip
+            });
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la réinitialisation du mot de passe'
+            });
+        }
+    },
+
     async getProfile(req, res) {
         try {
             // req.user contient déjà les données à jour grâce au middleware protect

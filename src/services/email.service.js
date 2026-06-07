@@ -674,6 +674,32 @@ const EmailService = {
         }
     },
 
+    async sendPasswordResetEmail(email, token) {
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Réinitialisation de votre mot de passe',
+            html: `
+                <h1>Réinitialisation du mot de passe</h1>
+                <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+                <p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :</p>
+                <a href="${resetLink}">Réinitialiser mon mot de passe</a>
+                <p>Ce lien expire dans 1 heure.</p>
+                <p>Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+            `
+        };
+
+        try {
+            await transporter.sendMail(mailOptions);
+            return true;
+        } catch (error) {
+            console.error('Error sending password reset email:', error);
+            return false;
+        }
+    },
+
     async sendPaymentFailureEmail(email, orderDetails, errorReason) {
 
         let userFriendlyReason = "Une erreur s'est produite";

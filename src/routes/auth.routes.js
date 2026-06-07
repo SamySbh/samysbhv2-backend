@@ -29,4 +29,10 @@ authRouter.get('/verify-email', authController.verifyEmail);
 // Rafraîchissement du token d'accès (POST /auth/refresh-token)
 authRouter.post('/refresh-token', authController.refreshToken);
 
+// Mot de passe oublié (POST /auth/forgot-password)
+authRouter.post('/forgot-password', authController.forgotPassword);
+
+// Réinitialisation du mot de passe (POST /auth/reset-password)
+authRouter.post('/reset-password', authController.resetPassword);
+
 export default authRouter;
