@@ -275,6 +275,14 @@ const authController = {
                 });
             }
 
+            // Vérification de l'email confirmé
+            if (!fetchedUser.isMailVerified) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Veuillez vérifier votre email avant de vous connecter. Vérifiez votre boîte mail.'
+                });
+            }
+
             // Vérification du mot de passe
             const passwordMatch = await bcrypt.compare(password, fetchedUser.password);
 
